@@ -7,10 +7,16 @@ import pickle
 from pypdf import PdfReader
 from docx import Document
 from rank_bm25 import BM25Okapi
-from sentence_transformers import SentenceTransformer, CrossEncoder
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnableLambda
-from app.config import VECTOR_DIR, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, TOP_K
+from app.config import (
+    VECTOR_DIR,
+    EMBED_MODEL,
+    RERANK_MODEL,
+    ENABLE_RERANK,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+)
 
 SIMILARITY_THRESHOLD = 0.65
 
@@ -22,9 +28,13 @@ _sessions = {}
 def _get_models():
     global _models
     if _models["embed"] is None:
-        _models["embed"] = SentenceTransformer(EMBED_MODEL)  # type: ignore
-    if _models["rerank"] is None:
-        _models["rerank"] = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")  # type: ignore
+        from sentence_transformers import SentenceTransformer
+
+        _models["embed"] = SentenceTransformer(EMBED_MODEL, device="cpu")  # type: ignore
+    if ENABLE_RERANK and _models["rerank"] is None:
+        from sentence_transformers import CrossEncoder
+
+        _models["rerank"] = CrossEncoder(RERANK_MODEL, device="cpu")  # type: ignore
     return _models
 
 def _session_dir(session_id: str):
@@ -114,7 +124,12 @@ def index_document(session_id: str, file_path: str):
     filename = os.path.basename(file_path)
     new_chunks = [f"[File: {filename}]\n{chunk}" for chunk in raw_chunks]
     models = _get_models()
-    embeddings = models["embed"].encode(new_chunks, normalize_embeddings=True)  # type: ignore
+    embeddings = models["embed"].encode(  # type: ignore
+        new_chunks,
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+        show_progress_bar=False,
+    )
     dim = embeddings.shape[1]
     sess = _get_session(session_id)
     if sess["index"] is None:
@@ -134,7 +149,12 @@ def retrieve_chunks(session_id: str, query: str):
         return "NOT_FOUND"
     
     models = _get_models()
-    q_emb = models["embed"].encode([query], normalize_embeddings=True)  # type: ignore
+    q_emb = models["embed"].encode(  # type: ignore
+        [query],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+        show_progress_bar=False,
+    )
     k = min(10, sess["index"].ntotal)
     
     # FAISS retrieval
@@ -158,13 +178,17 @@ def retrieve_chunks(session_id: str, query: str):
     top_candidates = [idx for idx, score in sorted_fused[:10]]
     candidate_chunks = [sess["chunks"][i] for i in top_candidates if i < len(sess["chunks"])]
     
-    # Cross-Encoder Reranking
-    pairs = [[query, chunk] for chunk in candidate_chunks]
-    rerank_scores = models["rerank"].predict(pairs)  # type: ignore
-    
-    # Select Top 3
-    top_3_indices = np.argsort(rerank_scores)[::-1][:3]
-    final_chunks = [candidate_chunks[i] for i in top_3_indices]
+    final_chunks = candidate_chunks[:3]
+    best_score = rrf_scores.get(top_candidates[0], 0.0) if top_candidates else 0.0
+
+    reranker = models.get("rerank")
+    if reranker is not None and len(candidate_chunks) > 1:
+        pairs = [[query, chunk] for chunk in candidate_chunks]
+        rerank_scores = reranker.predict(pairs)  # type: ignore
+        top_3_indices = np.argsort(rerank_scores)[::-1][:3]
+        final_chunks = [candidate_chunks[i] for i in top_3_indices]
+        if len(rerank_scores) > 0:
+            best_score = float(rerank_scores[top_3_indices[0]])
     
     # Context Size limit
     total_len = 0
@@ -175,8 +199,9 @@ def retrieve_chunks(session_id: str, query: str):
         trimmed_chunks.append(c)
         total_len += len(c)
         
-    print("RERANK COMPLETE")
-    return trimmed_chunks, float(rerank_scores[top_3_indices[0]]) if len(rerank_scores) > 0 else 0.0
+    if reranker is not None:
+        print("RERANK COMPLETE")
+    return trimmed_chunks, best_score
 
 def _document_pipeline_func(inputs: dict):
     return retrieve_chunks(inputs["session_id"], inputs["query"])

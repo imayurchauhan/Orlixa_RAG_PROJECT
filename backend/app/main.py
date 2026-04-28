@@ -1,3 +1,6 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 import shutil
 import asyncio
 import uuid
@@ -8,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.config import UPLOAD_DIR
 from app.db import init_db
-from app.rag import index_document, clear_session, _get_models
+from app.rag import index_document, clear_session
 from app.router import route_query, clear_chat_history
 from app.utils import validate_file
 from app.chat_history import (
@@ -24,18 +27,20 @@ from app.chat_history import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialise chat history DB
     init_db()
-    # Pre-load the embedding model on startup so it doesn't download during the first request
-    await asyncio.to_thread(_get_models)
     yield
 
 
-app = FastAPI(title="Hybrid RAG API", lifespan=lifespan)
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+@app.get("/")
+def root():
+    return {"message": "Orlixa API Running"}
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -203,4 +208,3 @@ async def clear(req: dict):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-# Trigger uvicorn reload
