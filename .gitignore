@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.db
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.sixth/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Data & vectorstore (generated at runtime)
+data/
+vectorstore/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Misc
+pyrightconfig.json

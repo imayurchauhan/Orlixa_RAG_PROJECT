@@ -1,0 +1,147 @@
+/* ===== Orlixa Branding Animations ===== */
+
+/* Pulsing glow on the logo icon */
+@keyframes orlixa-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.4)) drop-shadow(0 0 12px rgba(6, 182, 212, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(79, 70, 229, 0.6)) drop-shadow(0 0 20px rgba(6, 182, 212, 0.35));
+  }
+}
+
+.orlixa-logo-icon {
+  animation: orlixa-pulse 3s ease-in-out infinite;
+  transition: transform 0.3s ease;
+}
+
+.orlixa-logo-icon:hover {
+  transform: scale(1.05);
+}
+
+/* Letter-by-letter reveal for brand text */
+@keyframes orlixa-letter-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.orlixa-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: orlixa-letter-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.orlixa-letter:nth-child(1) { animation-delay: 0.1s; }
+.orlixa-letter:nth-child(2) { animation-delay: 0.22s; }
+.orlixa-letter:nth-child(3) { animation-delay: 0.34s; }
+.orlixa-letter:nth-child(4) { animation-delay: 0.46s; }
+.orlixa-letter:nth-child(5) { animation-delay: 0.58s; }
+.orlixa-letter:nth-child(6) { animation-delay: 0.70s; }
+
+/* Neon glow on brand text */
+@keyframes orlixa-text-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 4px rgba(79, 70, 229, 0.4),
+      0 0 8px rgba(6, 182, 212, 0.2);
+  }
+  50% {
+    text-shadow:
+      0 0 8px rgba(79, 70, 229, 0.6),
+      0 0 16px rgba(6, 182, 212, 0.35),
+      0 0 24px rgba(34, 197, 94, 0.15);
+  }
+}
+
+.orlixa-brand-text {
+  animation: orlixa-text-glow 4s ease-in-out infinite;
+  background: linear-gradient(135deg, #4F46E5, #06B6D4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tagline fade-in */
+@keyframes orlixa-tagline-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.orlixa-tagline {
+  animation: orlixa-tagline-fade 0.6s ease-out 1.2s forwards;
+  opacity: 0;
+}
+
+/* ===== Splash Screen ===== */
+
+@keyframes orlixa-splash-fade-out {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+@keyframes orlixa-splash-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes orlixa-splash-ring-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orlixa-splash-text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.orlixa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #111118 0%, #09090b 70%);
+  animation: orlixa-splash-fade-out 2.5s ease-in-out forwards;
+}
+
+.orlixa-splash-logo {
+  animation: orlixa-splash-logo-float 2s ease-in-out infinite;
+}
+
+.orlixa-splash-ring {
+  animation: orlixa-splash-ring-rotate 3s linear infinite;
+}
+
+.orlixa-splash-status {
+  background: linear-gradient(90deg, #4F46E5, #06B6D4, #22C55E, #06B6D4, #4F46E5);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: orlixa-splash-text-shimmer 2s linear infinite;
+}
+
+/* Sidebar brand group hover */
+.orlixa-brand-group {
+  transition: transform 0.3s ease;
+}
+.orlixa-brand-group:hover {
+  transform: scale(1.02);
+}

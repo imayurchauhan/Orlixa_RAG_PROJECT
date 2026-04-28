@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="orlixa-grad" x1="0" y1="0" x2="48" y2="48">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <radialGradient id="orlixa-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22C55E" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow-filter">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Outer ring -->
+  <circle cx="24" cy="24" r="22" stroke="url(#orlixa-grad)" stroke-width="2" fill="none" opacity="0.5"/>
+  <!-- Inner glow -->
+  <circle cx="24" cy="24" r="18" fill="url(#orlixa-glow)"/>
+  <!-- Neural network nodes -->
+  <circle cx="24" cy="14" r="2.5" fill="#4F46E5" filter="url(#glow-filter)"/>
+  <circle cx="15" cy="21" r="2" fill="#06B6D4" filter="url(#glow-filter)"/>
+  <circle cx="33" cy="21" r="2" fill="#06B6D4" filter="url(#glow-filter)"/>
+  <circle cx="24" cy="24" r="3.5" fill="url(#orlixa-grad)" filter="url(#glow-filter)"/>
+  <circle cx="17" cy="31" r="2" fill="#4F46E5" filter="url(#glow-filter)"/>
+  <circle cx="31" cy="31" r="2" fill="#4F46E5" filter="url(#glow-filter)"/>
+  <circle cx="24" cy="36" r="2.5" fill="#06B6D4" filter="url(#glow-filter)"/>
+  <!-- Neural connections -->
+  <line x1="24" y1="14" x2="15" y2="21" stroke="#4F46E5" stroke-width="0.8" opacity="0.6"/>
+  <line x1="24" y1="14" x2="33" y2="21" stroke="#06B6D4" stroke-width="0.8" opacity="0.6"/>
+  <line x1="24" y1="14" x2="24" y2="24" stroke="#4F46E5" stroke-width="0.8" opacity="0.6"/>
+  <line x1="15" y1="21" x2="24" y2="24" stroke="#06B6D4" stroke-width="0.8" opacity="0.6"/>
+  <line x1="33" y1="21" x2="24" y2="24" stroke="#4F46E5" stroke-width="0.8" opacity="0.6"/>
+  <line x1="24" y1="24" x2="17" y2="31" stroke="#06B6D4" stroke-width="0.8" opacity="0.6"/>
+  <line x1="24" y1="24" x2="31" y2="31" stroke="#4F46E5" stroke-width="0.8" opacity="0.6"/>
+  <line x1="24" y1="24" x2="24" y2="36" stroke="#06B6D4" stroke-width="0.8" opacity="0.6"/>
+  <line x1="17" y1="31" x2="24" y2="36" stroke="#4F46E5" stroke-width="0.8" opacity="0.6"/>
+  <line x1="31" y1="31" x2="24" y2="36" stroke="#06B6D4" stroke-width="0.8" opacity="0.6"/>
+  <line x1="15" y1="21" x2="17" y2="31" stroke="#22C55E" stroke-width="0.5" opacity="0.4"/>
+  <line x1="33" y1="21" x2="31" y2="31" stroke="#22C55E" stroke-width="0.5" opacity="0.4"/>
+  <!-- Center accent dot -->
+  <circle cx="24" cy="24" r="1.5" fill="#22C55E" opacity="0.8"/>
+</svg>
