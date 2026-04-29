@@ -6,14 +6,21 @@ import asyncio
 import uuid
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.config import UPLOAD_DIR
-from app.db import init_db, get_conn
+from app.db import init_db
 from app.rag import index_document, clear_session
 from app.router import route_query, clear_chat_history
 from app.utils import validate_file
+from app.auth import (
+    create_user,
+    authenticate_user,
+    upsert_google_user,
+    build_auth_response,
+    get_current_user,
+)
 from app.chat_history import (
     create_chat,
     list_chats,
@@ -22,6 +29,7 @@ from app.chat_history import (
     delete_chat,
     chat_exists,
     rename_chat,
+    ensure_chat,
 )
 
 
@@ -41,16 +49,6 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 @app.get("/")
 def root():
     return {"message": "Orlixa API Running"}
-
-
-def _ensure_chat_record(chat_id: str, title: str = "New Chat") -> None:
-    conn = get_conn()
-    conn.execute(
-        "INSERT OR IGNORE INTO chats (id, title) VALUES (?, ?)",
-        (chat_id, title),
-    )
-    conn.commit()
-    conn.close()
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -75,43 +73,78 @@ class AddMessageRequest(BaseModel):
 class RenameChatRequest(BaseModel):
     title: str
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = ""
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+
+@app.post("/auth/register", status_code=201)
+async def api_register(req: RegisterRequest):
+    user = create_user(req.email, req.password, req.full_name or "")
+    return build_auth_response(user)
+
+
+@app.post("/auth/login")
+async def api_login(req: LoginRequest):
+    user = authenticate_user(req.email, req.password)
+    return build_auth_response(user)
+
+
+@app.post("/auth/google")
+async def api_google_login(req: GoogleLoginRequest):
+    user = upsert_google_user(req.credential)
+    return build_auth_response(user)
+
+
+@app.get("/auth/me")
+async def api_me(current_user: dict = Depends(get_current_user)):
+    return {"user": current_user}
+
 
 # ── Chat history endpoints ───────────────────────────────────────────────────
 
 @app.post("/chats", status_code=201)
-async def api_create_chat(req: CreateChatRequest):
-    return create_chat(req.title or "New Chat")
+async def api_create_chat(req: CreateChatRequest, current_user: dict = Depends(get_current_user)):
+    return create_chat(current_user["id"], req.title or "New Chat")
 
 @app.get("/chats")
-async def api_list_chats():
-    return {"chats": list_chats()}
+async def api_list_chats(current_user: dict = Depends(get_current_user)):
+    return {"chats": list_chats(current_user["id"])}
 
 @app.get("/chats/{chat_id}")
-async def api_get_chat(chat_id: str):
-    if not chat_exists(chat_id):
+async def api_get_chat(chat_id: str, current_user: dict = Depends(get_current_user)):
+    if not chat_exists(current_user["id"], chat_id):
         return {"messages": []}
-    return {"messages": get_chat_messages(chat_id)}
+    return {"messages": get_chat_messages(current_user["id"], chat_id)}
 
 @app.post("/messages", status_code=201)
-async def api_add_message(req: AddMessageRequest):
-    if not chat_exists(req.chat_id):
-        _ensure_chat_record(req.chat_id)
+async def api_add_message(req: AddMessageRequest, current_user: dict = Depends(get_current_user)):
+    if not chat_exists(current_user["id"], req.chat_id):
+        ensure_chat(current_user["id"], req.chat_id)
     return add_message(req.chat_id, req.role, req.content, req.source)
 
 @app.delete("/chats/{chat_id}")
-async def api_delete_chat(chat_id: str):
-    delete_chat(chat_id)
-    # Also clear RAG session and upload files
-    clear_session(chat_id)
-    clear_chat_history(chat_id)
-    upload_dir = UPLOAD_DIR / chat_id
-    if upload_dir.exists():
-        shutil.rmtree(upload_dir)
+async def api_delete_chat(chat_id: str, current_user: dict = Depends(get_current_user)):
+    deleted = delete_chat(current_user["id"], chat_id)
+    if deleted:
+        clear_session(chat_id)
+        clear_chat_history(chat_id)
+        upload_dir = UPLOAD_DIR / chat_id
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir)
     return {"status": "deleted"}
 
 @app.patch("/chats/{chat_id}")
-async def api_rename_chat(chat_id: str, req: RenameChatRequest):
-    if not rename_chat(chat_id, req.title):
+async def api_rename_chat(chat_id: str, req: RenameChatRequest, current_user: dict = Depends(get_current_user)):
+    if not rename_chat(current_user["id"], chat_id, req.title):
         raise HTTPException(404, "Chat not found")
     return {"status": "renamed"}
 
@@ -119,9 +152,9 @@ async def api_rename_chat(chat_id: str, req: RenameChatRequest):
 # ── RAG chat endpoint (chat_id-scoped) ───────────────────────────────────────
 
 @app.post("/chat/{chat_id}", response_model=ChatResponse)
-async def chat_scoped(chat_id: str, req: ChatRequest):
-    if not chat_exists(chat_id):
-        _ensure_chat_record(chat_id)
+async def chat_scoped(chat_id: str, req: ChatRequest, current_user: dict = Depends(get_current_user)):
+    if not chat_exists(current_user["id"], chat_id):
+        ensure_chat(current_user["id"], chat_id)
     if not req.message.strip():
         raise HTTPException(400, "Empty message.")
 
@@ -145,8 +178,10 @@ async def chat_scoped(chat_id: str, req: ChatRequest):
 # ── Legacy endpoint (kept for backward compat) ───────────────────────────────
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
     req.session_id = req.session_id.strip() or uuid.uuid4().hex
+    if not chat_exists(current_user["id"], req.session_id):
+        ensure_chat(current_user["id"], req.session_id)
     if not req.message.strip():
         raise HTTPException(400, "Empty message.")
     try:
@@ -162,8 +197,14 @@ async def chat(req: ChatRequest):
 # ── File upload endpoints ────────────────────────────────────────────────────
 
 @app.post("/upload")
-async def upload_file(files: List[UploadFile] = File(...), session_id: str = Form("")):
+async def upload_file(
+    files: List[UploadFile] = File(...),
+    session_id: str = Form(""),
+    current_user: dict = Depends(get_current_user),
+):
     session_id = session_id.strip() or uuid.uuid4().hex
+    if not chat_exists(current_user["id"], session_id):
+        ensure_chat(current_user["id"], session_id)
     results = []
     for file in files:
         if not validate_file(file.filename):
@@ -193,8 +234,10 @@ async def upload_file(files: List[UploadFile] = File(...), session_id: str = For
 
 
 @app.get("/files")
-async def list_files(session_id: str = Query("")):
+async def list_files(session_id: str = Query(""), current_user: dict = Depends(get_current_user)):
     session_id = session_id.strip() or uuid.uuid4().hex
+    if not chat_exists(current_user["id"], session_id):
+        return {"files": []}
     session_upload_dir = UPLOAD_DIR / session_id
     if not session_upload_dir.exists():
         return {"files": []}
@@ -203,9 +246,9 @@ async def list_files(session_id: str = Query("")):
 
 
 @app.post("/clear")
-async def clear(req: dict):
+async def clear(req: dict, current_user: dict = Depends(get_current_user)):
     session_id = req.get("session_id", "")
-    if session_id:
+    if session_id and chat_exists(current_user["id"], session_id):
         clear_session(session_id)
         clear_chat_history(session_id)
         upload_dir = UPLOAD_DIR / session_id

@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "change-this-secret-in-production")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "data" / "uploads"
 VECTOR_DIR = BASE_DIR / "vectorstore"
