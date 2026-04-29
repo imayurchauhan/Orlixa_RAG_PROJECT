@@ -189,39 +189,42 @@ export default function Home() {
         />
 
         <div
-          className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}
+          className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${sidebarOpen ? "md:ml-64" : "ml-0"}`}
         >
-          <header className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl animate-slide-in-top">
-            <div className={`flex items-center gap-3 ${sidebarOpen ? "" : "pl-10"}`}>
+          <header className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl animate-slide-in-top gap-2 sm:gap-0">
+            <div className={`flex items-center gap-2 sm:gap-3 min-w-0 flex-1 ${sidebarOpen ? "md:flex-initial" : ""}`}>
               {!sidebarOpen && <OrlixaLogo compact />}
               {activeChatId && (
-                <span className="text-sm text-white/50 font-medium truncate max-w-[200px]">
+                <span className="text-xs sm:text-sm text-white/50 font-medium truncate max-w-[150px] sm:max-w-[200px]">
                   {chats.find((c) => c.id === activeChatId)?.title ?? ""}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06] animate-fade-in" style={{ animationDelay: "0.1s" }}>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/80 to-violet-500/80 flex items-center justify-center text-xs font-semibold">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+              <div className="hidden sm:flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-white/[0.04] border border-white/[0.06] animate-fade-in min-w-0" style={{ animationDelay: "0.1s" }}>
+                <div className="w-6 sm:w-8 h-6 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500/80 to-violet-500/80 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                   {(currentUser.full_name || currentUser.email).slice(0, 1).toUpperCase()}
                 </div>
-                <div className="leading-tight">
-                  <p className="text-sm text-white/85">
+                <div className="leading-tight hidden sm:block">
+                  <p className="text-xs sm:text-sm text-white/85 truncate">
                     {currentUser.full_name || currentUser.email}
                   </p>
-                  <p className="text-[11px] text-white/35">{currentUser.email}</p>
+                  <p className="text-[10px] text-white/35 truncate">{currentUser.email}</p>
                 </div>
               </div>
 
               {uploadedFiles.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20 animate-pulse-subtle">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400">
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-violet-500/10 border border-violet-500/20 animate-pulse-subtle flex-shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400 flex-shrink-0">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
-                  <span className="text-xs text-violet-300 font-medium">
+                  <span className="text-xs text-violet-300 font-medium hidden sm:inline">
                     {uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""}
+                  </span>
+                  <span className="text-[10px] text-violet-300 font-medium sm:hidden">
+                    {uploadedFiles.length}
                   </span>
                 </div>
               )}
@@ -229,15 +232,16 @@ export default function Home() {
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.07] text-sm text-white/70 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-[1.05] disabled:opacity-50 transform"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-white/[0.05] border border-white/[0.07] text-xs sm:text-sm text-white/70 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-[1.05] disabled:opacity-50 transform flex-shrink-0"
               >
-                Sign out
+                <span className="hidden sm:inline">Sign out</span>
+                <span className="sm:hidden">Sign out</span>
               </button>
             </div>
           </header>
 
           <div className="flex-1 overflow-hidden">
-            <div className="max-w-3xl mx-auto h-full">
+            <div className="w-full max-w-3xl mx-auto h-full px-0">
               <Chat
                 key={activeChatId ?? "no-chat"}
                 chatId={activeChatId}

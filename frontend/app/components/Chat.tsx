@@ -201,14 +201,14 @@ export default function Chat({
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4 scroll-smooth">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 scroll-smooth">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-white/30 select-none animate-fade-in">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-40 animate-pulse">
+          <div className="flex flex-col items-center justify-center h-full text-white/30 select-none animate-fade-in px-4">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-3 sm:mb-4 opacity-40 animate-pulse">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <p className="text-sm font-medium">Ask anything or attach documents</p>
-            <p className="text-xs mt-1 text-white/20">Supports PDF, DOCX, TXT, Images · Multiple files</p>
+            <p className="text-xs sm:text-sm font-medium">Ask anything or attach documents</p>
+            <p className="text-[10px] sm:text-xs mt-1 text-white/20 text-center">Supports PDF, DOCX, TXT, Images · Multiple files</p>
           </div>
         )}
         {messages.map((msg, i) => {
@@ -219,14 +219,14 @@ export default function Chat({
           return (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-in-bottom`} style={{ animationDelay: `${i * 50}ms` }}>
             {msg.role === "system" ? (
-              <div className="w-full flex justify-center">
-                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06] animate-scale-in">
+              <div className="w-full flex justify-center px-2">
+                <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06] animate-scale-in">
                   {msg.content}
                 </span>
               </div>
             ) : (
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all duration-300 animate-in ${
+                className={`max-w-[85%] sm:max-w-[80%] px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl text-xs sm:text-sm leading-relaxed transition-all duration-300 animate-in ${
                   msg.role === "user"
                     ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-br-md hover:shadow-lg hover:shadow-indigo-500/20 transform hover:scale-[1.02]"
                     : `bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm hover:bg-white/[0.08] ${
@@ -235,23 +235,23 @@ export default function Chat({
                 }`}
               >
                 {msg.files && msg.files.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                  <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
                     {msg.files.map((name, fi) => (
-                      <span key={fi} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-medium text-white/80 animate-scale-in">
+                      <span key={fi} className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md bg-white/10 text-[9px] sm:text-[11px] font-medium text-white/80 animate-scale-in">
                         {FILE_ICON}
-                        {name}
+                        <span className="max-w-[100px] sm:max-w-none truncate">{name}</span>
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap">
+                <p className="whitespace-pre-wrap break-words">
                   {displayText}
                   {isTyping && (
                     <span className="typing-cursor inline-block ml-0.5" />
                   )}
                 </p>
                 {msg.source && SOURCE_BADGE[msg.source] && !isTyping && (
-                  <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${SOURCE_BADGE[msg.source].color} animate-fade-in`}>
+                  <span className={`inline-block mt-1.5 sm:mt-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium ${SOURCE_BADGE[msg.source].color} animate-fade-in`}>
                     {SOURCE_BADGE[msg.source].label}
                   </span>
                 )}
@@ -262,18 +262,19 @@ export default function Chat({
         })}
         {(loading || uploading) && (
           <div className="flex justify-start animate-slide-in-bottom">
-            <div className="bg-white/[0.06] border border-white/[0.06] px-4 py-3 rounded-2xl rounded-bl-md backdrop-blur-sm">
-              <div className="flex items-center gap-2 text-xs text-white/40">
+            <div className="bg-white/[0.06] border border-white/[0.06] px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl rounded-bl-md backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-[10px] sm:text-xs text-white/40">
                 {uploading ? (
                   <>
-                    <span className="inline-block w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                    Indexing files...
+                    <span className="inline-block w-2.5 sm:w-3 h-2.5 sm:h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                    <span className="hidden sm:inline">Indexing files...</span>
+                    <span className="sm:hidden">Indexing...</span>
                   </>
                 ) : (
-                  <div className="flex gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce [animation-delay:300ms]" />
+                  <div className="flex gap-1">
+                    <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-white/30 animate-bounce [animation-delay:0ms]" />
+                    <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-white/30 animate-bounce [animation-delay:150ms]" />
+                    <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-white/30 animate-bounce [animation-delay:300ms]" />
                   </div>
                 )}
               </div>
@@ -283,19 +284,19 @@ export default function Chat({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-4 py-3 animate-slide-in-bottom">
+      <div className="border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-2 sm:px-4 py-2 sm:py-3 animate-slide-in-bottom">
         <div className="max-w-3xl mx-auto">
           {/* Pending file chips */}
           {pendingFiles.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2">
               {pendingFiles.map((file, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs text-white/70 animate-scale-in hover:bg-white/[0.1] transition-colors"
+                  className="inline-flex items-center gap-1 pl-1.5 sm:pl-2 pr-0.5 sm:pr-1 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-white/[0.06] border border-white/[0.08] text-[9px] sm:text-xs text-white/70 animate-scale-in hover:bg-white/[0.1] transition-colors"
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   {FILE_ICON}
-                  <span className="max-w-[120px] truncate">{file.name}</span>
+                  <span className="max-w-[80px] sm:max-w-[120px] truncate">{file.name}</span>
                   <button
                     onClick={() => removePendingFile(i)}
                     className="ml-0.5 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors transform hover:scale-110"
@@ -311,16 +312,16 @@ export default function Chat({
           )}
 
           {/* Input row */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-end gap-1.5 sm:gap-2">
             {/* Attach button */}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loading || uploading || !chatId}
-              className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.1] transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95"
+              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.1] transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95 flex-shrink-0"
               title="Attach files (PDF, DOCX, TXT, Images)"
               id="attach-button"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
             </button>
@@ -329,11 +330,11 @@ export default function Chat({
             <button
               onClick={handleClear}
               disabled={loading || uploading || !chatId || messages.length === 0}
-              className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95"
+              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95 flex-shrink-0"
               title="Clear chat history"
               id="clear-button"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 <line x1="10" y1="11" x2="10" y2="17" />
@@ -367,10 +368,10 @@ export default function Chat({
                   handleSend();
                 }
               }}
-              placeholder={chatId ? "Type a message... (Shift+Enter for new line)" : "Select or create a chat to start"}
+              placeholder={chatId ? "Message... (Shift+Enter)" : "Select chat"}
               disabled={loading || uploading || !chatId}
               rows={1}
-              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all disabled:opacity-50 resize-none overflow-y-auto"
+              className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all disabled:opacity-50 resize-none overflow-y-auto"
               style={{ maxHeight: "150px" }}
               id="chat-input"
             />
@@ -379,10 +380,10 @@ export default function Chat({
             <button
               onClick={handleSend}
               disabled={(loading || uploading || !chatId) || (!input.trim() && pendingFiles.length === 0)}
-              className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95"
+              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95 flex-shrink-0"
               id="send-button"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
