@@ -44,6 +44,38 @@ _LIVE_QUERY_TERMS = (
     "this week",
     "this month",
 )
+_ACKNOWLEDGEMENT_REPLIES = {
+    "ok": "Okay.",
+    "okay": "Okay.",
+    "k": "Okay.",
+    "alright": "Alright.",
+    "all right": "Alright.",
+    "fine": "Okay.",
+    "cool": "Cool.",
+    "got it": "Got it.",
+    "understood": "Understood.",
+    "noted": "Noted.",
+    "thanks": "You're welcome.",
+    "thank you": "You're welcome.",
+    "ok thanks": "You're welcome.",
+    "okay thanks": "You're welcome.",
+    "thanks okay": "You're welcome.",
+}
+_LEAVE_IT_PHRASES = {
+    "leave it",
+    "leave it for now",
+    "ok leave it",
+    "okay leave it",
+    "ok, leave it",
+    "okay, leave it",
+    "its ok leave it",
+    "it's ok leave it",
+    "skip it",
+    "forget it",
+    "nevermind",
+    "never mind",
+}
+_EXIT_PHRASES = {"bye", "ok bye", "goodbye", "exit", "quit", "end chat", "end session", "see you"}
 
 def get_history_str(session_id: str) -> str:
     hist = get_history(session_id)
@@ -78,6 +110,18 @@ def _is_live_or_time_sensitive(question: str) -> bool:
 
 def _is_non_reusable_cached_answer(answer: str) -> bool:
     return answer.strip() == _FINAL_FALLBACK_ANSWER
+
+def _get_conversational_reply(question: str):
+    normalized = " ".join(question.strip().lower().split())
+    if not normalized:
+        return None
+    if normalized in _EXIT_PHRASES:
+        return {"answer": "Goodbye! I'll be here whenever you're ready to continue our chat.", "source": "system"}
+    if normalized in _LEAVE_IT_PHRASES:
+        return {"answer": "Okay, we can leave it here. Let me know if you want to ask something else.", "source": "system"}
+    if normalized in _ACKNOWLEDGEMENT_REPLIES:
+        return {"answer": _ACKNOWLEDGEMENT_REPLIES[normalized], "source": "system"}
+    return None
 
 def _get_session_images(session_id: str):
     session_upload_dir = UPLOAD_DIR / session_id
@@ -129,16 +173,16 @@ def route_query(session_id: str, question: str) -> dict:
     print(f"SESSION: {session_id}")
     history = get_history_str(session_id)
     original_question = question.strip()
+    conversational_reply = _get_conversational_reply(original_question)
+    if conversational_reply:
+        add_history(session_id, original_question, conversational_reply["answer"])
+        return conversational_reply
+
     refined_question = refine_query(original_question, history)
     print("ORIGINAL QUERY:", original_question)
     print("REFINED QUERY:", refined_question)
     question = refined_question
     images = _get_session_images(session_id)
-
-    # 1. Explicit conversational bypass for "end chat" or "bye"
-    exit_phrases = {"bye", "ok bye", "goodbye", "exit", "quit", "end chat", "end session", "see you"}
-    if original_question.lower() in exit_phrases:
-        return {"answer": "Goodbye! I'll be here whenever you're ready to continue our chat.", "source": "system"}
 
     # Check time-sensitivity on BOTH original and refined query so typos/bad prompts still work
     is_live = _is_live_or_time_sensitive(original_question) or _is_live_or_time_sensitive(refined_question)
