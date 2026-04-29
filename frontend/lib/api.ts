@@ -128,16 +128,6 @@ export async function loginWithEmail(email: string, password: string): Promise<A
   return storeAuth(await res.json());
 }
 
-export async function loginWithGoogle(credential: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/google`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ credential }),
-  });
-  if (!res.ok) throw await buildError(res);
-  return storeAuth(await res.json());
-}
-
 export async function fetchCurrentUser(): Promise<AuthUser> {
   const res = await apiFetch("/auth/me");
   const data = await res.json();
@@ -177,6 +167,13 @@ export async function renameChat(chatId: string, title: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
   });
+}
+
+export async function clearChatMessages(chatId: string): Promise<{ status: string }> {
+  const res = await apiFetch(`/chats/${encodeURIComponent(chatId)}/clear`, {
+    method: "POST",
+  });
+  return res.json();
 }
 
 export async function sendMessageToChat(

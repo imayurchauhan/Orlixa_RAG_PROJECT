@@ -5,6 +5,7 @@ import {
   sendMessageToChat,
   uploadFiles,
   getChatMessages,
+  clearChatMessages,
   UploadResult,
   ChatMessage,
 } from "@/lib/api";
@@ -51,6 +52,7 @@ export default function Chat({
   const [loading, setLoading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [displayedText, setDisplayedText] = useState(""); // For typing effect
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,9 +68,34 @@ export default function Chat({
       .catch(() => setMessages([]));
   }, [chatId]);
 
+  // Typing effect for the last assistant message
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant" || loading) {
+      setDisplayedText("");
+      return;
+    }
+
+    const fullText = lastMsg.content;
+    let charIndex = 0;
+    setDisplayedText("");
+
+    const typingSpeed = 5; // milliseconds per character
+    const interval = setInterval(() => {
+      if (charIndex < fullText.length) {
+        setDisplayedText(fullText.slice(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(interval);
+      }
+    }, typingSpeed);
+
+    return () => clearInterval(interval);
+  }, [messages, loading]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages, displayedText]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
@@ -158,23 +185,42 @@ export default function Chat({
     }
   };
 
+  const handleClear = async () => {
+    if (!chatId || messages.length === 0) return;
+    if (!confirm("Are you sure you want to clear all messages from this chat? This action cannot be undone.")) return;
+
+    try {
+      await clearChatMessages(chatId);
+      setMessages([]);
+      setDisplayedText("");
+      inputRef.current?.focus();
+    } catch {
+      alert("Failed to clear chat. Please try again.");
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4 scroll-smooth">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-white/30 select-none">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-40">
+          <div className="flex flex-col items-center justify-center h-full text-white/30 select-none animate-fade-in">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-40 animate-pulse">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             <p className="text-sm font-medium">Ask anything or attach documents</p>
             <p className="text-xs mt-1 text-white/20">Supports PDF, DOCX, TXT, Images · Multiple files</p>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+        {messages.map((msg, i) => {
+          const isLastAssistantMsg = msg.role === "assistant" && i === messages.length - 1;
+          const displayText = isLastAssistantMsg ? displayedText : msg.content;
+          const isTyping = isLastAssistantMsg && displayedText.length < msg.content.length;
+
+          return (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-in-bottom`} style={{ animationDelay: `${i * 50}ms` }}>
             {msg.role === "system" ? (
               <div className="w-full flex justify-center">
-                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06]">
+                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06] animate-scale-in">
                   {msg.content}
                 </span>
               </div>
@@ -182,32 +228,40 @@ export default function Chat({
               <div
                 className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all duration-300 animate-in ${
                   msg.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-br-md"
-                    : "bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm"
+                    ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-br-md hover:shadow-lg hover:shadow-indigo-500/20 transform hover:scale-[1.02]"
+                    : `bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm hover:bg-white/[0.08] ${
+                        isTyping ? "shadow-lg shadow-indigo-500/10 border-indigo-500/30" : ""
+                      }`
                 }`}
               >
                 {msg.files && msg.files.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {msg.files.map((name, fi) => (
-                      <span key={fi} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-medium text-white/80">
+                      <span key={fi} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-medium text-white/80 animate-scale-in">
                         {FILE_ICON}
                         {name}
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-                {msg.source && SOURCE_BADGE[msg.source] && (
-                  <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${SOURCE_BADGE[msg.source].color}`}>
+                <p className="whitespace-pre-wrap">
+                  {displayText}
+                  {isTyping && (
+                    <span className="typing-cursor inline-block ml-0.5" />
+                  )}
+                </p>
+                {msg.source && SOURCE_BADGE[msg.source] && !isTyping && (
+                  <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${SOURCE_BADGE[msg.source].color} animate-fade-in`}>
                     {SOURCE_BADGE[msg.source].label}
                   </span>
                 )}
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
         {(loading || uploading) && (
-          <div className="flex justify-start">
+          <div className="flex justify-start animate-slide-in-bottom">
             <div className="bg-white/[0.06] border border-white/[0.06] px-4 py-3 rounded-2xl rounded-bl-md backdrop-blur-sm">
               <div className="flex items-center gap-2 text-xs text-white/40">
                 {uploading ? (
@@ -229,7 +283,7 @@ export default function Chat({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-4 py-3">
+      <div className="border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-4 py-3 animate-slide-in-bottom">
         <div className="max-w-3xl mx-auto">
           {/* Pending file chips */}
           {pendingFiles.length > 0 && (
@@ -237,13 +291,14 @@ export default function Chat({
               {pendingFiles.map((file, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs text-white/70"
+                  className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs text-white/70 animate-scale-in hover:bg-white/[0.1] transition-colors"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   {FILE_ICON}
                   <span className="max-w-[120px] truncate">{file.name}</span>
                   <button
                     onClick={() => removePendingFile(i)}
-                    className="ml-0.5 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+                    className="ml-0.5 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors transform hover:scale-110"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" />
@@ -261,12 +316,28 @@ export default function Chat({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loading || uploading || !chatId}
-              className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.1] transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.1] transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95"
               title="Attach files (PDF, DOCX, TXT, Images)"
               id="attach-button"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+
+            {/* Clear button */}
+            <button
+              onClick={handleClear}
+              disabled={loading || uploading || !chatId || messages.length === 0}
+              className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all disabled:opacity-30 transform hover:scale-110 active:scale-95"
+              title="Clear chat history"
+              id="clear-button"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
               </svg>
             </button>
             <input
@@ -308,7 +379,7 @@ export default function Chat({
             <button
               onClick={handleSend}
               disabled={(loading || uploading || !chatId) || (!input.trim() && pendingFiles.length === 0)}
-              className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95"
               id="send-button"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

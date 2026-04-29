@@ -164,7 +164,13 @@ def authenticate_user(email: str, password: str) -> dict:
     return serialize_user(row)
 
 
+# ── FUTURE SCOPE: Google Authentication ──────────────────────────────────────
+# The following functions are kept for future implementation of Google login
+# They can be re-enabled when Google OAuth2 integration is required
+
+
 def verify_google_credential(credential: str) -> dict:
+    """[FUTURE SCOPE] Verify Google OAuth2 credential token."""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=503, detail="Google login is not configured")
     try:
@@ -194,6 +200,7 @@ def verify_google_credential(credential: str) -> dict:
 
 
 def upsert_google_user(credential: str) -> dict:
+    """[FUTURE SCOPE] Upsert a Google OAuth2 user."""
     google_user = verify_google_credential(credential)
     conn = get_conn()
     row = conn.execute(

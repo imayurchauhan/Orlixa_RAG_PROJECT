@@ -77,6 +77,63 @@ _LEAVE_IT_PHRASES = {
 }
 _EXIT_PHRASES = {"bye", "ok bye", "goodbye", "exit", "quit", "end chat", "end session", "see you"}
 
+# Identity query responses for Orlixa AI
+_IDENTITY_RESPONSES = {
+    "I am Orlixa, an AI assistant designed to help you with information retrieval and answering questions. "
+    "I can help you search through documents, access web information, and have meaningful conversations. "
+    "What can I assist you with today?"
+}
+
+_IDENTITY_PHRASES = {
+    "who are you",
+    "what are you",
+    "what is your name",
+    "what are you called",
+    "who am i talking to",
+    "what should i call you",
+    "your name",
+    "your identity",
+    "what's your name",
+    "who's this",
+    "introduce yourself",
+    "tell me about yourself",
+    "what do you do",
+    "what's your purpose",
+    "what can you do",
+}
+
+# Hindi/Hinglish Common Knowledge Base
+_HINDI_KNOWLEDGE_BASE = {
+    # Indian President & Father of Nation
+    ("rastrapati", "droupadi murmu"): "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
+    ("rashtrapita", "gandhi"): "Bharat ke Rashtrapita (Father of the Nation) Mahatma Gandhi hain. Unhe Bapu bhi kehte hain.",
+    ("bapu", "gandhi"): "Bapu (Father) Mahatma Gandhi the Rashtrapita (Father of the Nation) of India.",
+    
+    # Indian Prime Minister
+    ("pradhan mantri", "narendra modi"): "Bharat ke vartaman Pradhan Mantri (Prime Minister) Narendra Modi hain.",
+    ("pm", "narendra modi"): "Bharat ke Prime Minister Narendra Modi hain.",
+    
+    # Other common Indian facts
+    ("bharat ki rajdhani", "delhi"): "Bharat ki Rajdhani (Capital) New Delhi hai.",
+    ("capital", "india"): "The capital of India is New Delhi.",
+    ("rashtra gaan", "jana gana mana"): "Bharat ka Rashtra Gaan (National Anthem) 'Jana Gana Mana' hai.",
+    ("national anthem", "india"): "The National Anthem of India is 'Jana Gana Mana' composed by Rabindranath Tagore.",
+    ("rashtra bhasha", "hindi"): "Bharat ki Rashtra Bhasha (National Language) Hindi hai.",
+    ("national language", "india"): "The national language of India is Hindi.",
+}
+
+# Clarification detection keywords
+_CLARIFICATION_KEYWORDS = {
+    "nahi", "no", "not", "bilkul nahi", "absolutely not",
+    "galat", "wrong", "incorrect", "galat tha",
+    "nai", "nahin", "nahi",
+    "pata hai", "means", "matlab",
+    "alag", "different", "doosra",
+    "aur", "and", "also",
+    "haan", "yes", "bilkul",
+}
+
+
 def get_history_str(session_id: str) -> str:
     hist = get_history(session_id)
     if not hist:
@@ -111,7 +168,7 @@ def _is_live_or_time_sensitive(question: str) -> bool:
 def _is_non_reusable_cached_answer(answer: str) -> bool:
     return answer.strip() == _FINAL_FALLBACK_ANSWER
 
-def _get_conversational_reply(question: str):
+def _get_conversational_reply(question: str, history: str = ""):
     normalized = " ".join(question.strip().lower().split())
     if not normalized:
         return None
@@ -121,7 +178,29 @@ def _get_conversational_reply(question: str):
         return {"answer": "Okay, we can leave it here. Let me know if you want to ask something else.", "source": "system"}
     if normalized in _ACKNOWLEDGEMENT_REPLIES:
         return {"answer": _ACKNOWLEDGEMENT_REPLIES[normalized], "source": "system"}
+    
+    # Check for identity queries
+    for phrase in _IDENTITY_PHRASES:
+        if phrase in normalized:
+            return {"answer": list(_IDENTITY_RESPONSES)[0], "source": "system"}
+    
+    # Check Hindi/Hinglish knowledge base
+    for (key1, key2), answer in _HINDI_KNOWLEDGE_BASE.items():
+        if key1 in normalized or key2 in normalized:
+            return {"answer": answer, "source": "knowledge"}
+    
+    # Check for clarification intent (e.g., "nahi, mujhe X janna hai" = "No, I want to know X")
+    has_negation = any(kw in normalized for kw in ["nahi", "no", "not", "bilkul nahi", "galat"])
+    
+    if has_negation and history:
+        # User is correcting/clarifying with a negation like "nahi" (no)
+        # Look for any Hindi knowledge key in the current question
+        for (key1, key2), answer in _HINDI_KNOWLEDGE_BASE.items():
+            if key1 in normalized:
+                return {"answer": answer, "source": "knowledge"}
+    
     return None
+
 
 def _get_session_images(session_id: str):
     session_upload_dir = UPLOAD_DIR / session_id
@@ -173,7 +252,7 @@ def route_query(session_id: str, question: str) -> dict:
     print(f"SESSION: {session_id}")
     history = get_history_str(session_id)
     original_question = question.strip()
-    conversational_reply = _get_conversational_reply(original_question)
+    conversational_reply = _get_conversational_reply(original_question, history)
     if conversational_reply:
         add_history(session_id, original_question, conversational_reply["answer"])
         return conversational_reply

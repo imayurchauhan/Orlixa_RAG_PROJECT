@@ -17,7 +17,6 @@ from app.utils import validate_file
 from app.auth import (
     create_user,
     authenticate_user,
-    upsert_google_user,
     build_auth_response,
     get_current_user,
 )
@@ -30,6 +29,7 @@ from app.chat_history import (
     chat_exists,
     rename_chat,
     ensure_chat,
+    clear_chat_messages,
 )
 
 
@@ -82,9 +82,6 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-class GoogleLoginRequest(BaseModel):
-    credential: str
-
 
 @app.post("/auth/register", status_code=201)
 async def api_register(req: RegisterRequest):
@@ -95,12 +92,6 @@ async def api_register(req: RegisterRequest):
 @app.post("/auth/login")
 async def api_login(req: LoginRequest):
     user = authenticate_user(req.email, req.password)
-    return build_auth_response(user)
-
-
-@app.post("/auth/google")
-async def api_google_login(req: GoogleLoginRequest):
-    user = upsert_google_user(req.credential)
     return build_auth_response(user)
 
 
@@ -147,6 +138,15 @@ async def api_rename_chat(chat_id: str, req: RenameChatRequest, current_user: di
     if not rename_chat(current_user["id"], chat_id, req.title):
         raise HTTPException(404, "Chat not found")
     return {"status": "renamed"}
+
+@app.post("/chats/{chat_id}/clear")
+async def api_clear_chat_messages(chat_id: str, current_user: dict = Depends(get_current_user)):
+    """Clear all messages from a chat without deleting the chat itself."""
+    if not clear_chat_messages(current_user["id"], chat_id):
+        raise HTTPException(404, "Chat not found")
+    clear_session(chat_id)
+    clear_chat_history(chat_id)
+    return {"status": "cleared"}
 
 
 # ── RAG chat endpoint (chat_id-scoped) ───────────────────────────────────────

@@ -29,9 +29,27 @@ body {
   color: var(--foreground);
 }
 
+/* ── FADE ANIMATIONS ── */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ── SLIDE ANIMATIONS ── */
+@keyframes slide-in-from-bottom {
+  from { 
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-in-from-bottom-2 {
@@ -39,11 +57,237 @@ body {
   to { transform: translateY(0); }
 }
 
+@keyframes slide-out-to-bottom {
+  from { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to { 
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── SCALE ANIMATIONS ── */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* ── PULSE ANIMATIONS ── */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* ── TYPING ANIMATIONS ── */
+@keyframes typing-cursor {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes typing-animation {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes char-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 8px 4px rgba(99, 102, 241, 0.05);
+  }
+}
+
+/* ── COMBINED ANIMATIONS ── */
 .animate-in {
-  animation: fade-in 0.2s ease-out, slide-in-from-bottom-2 0.2s ease-out;
+  animation: fade-in 0.3s ease-out, slide-in-from-bottom-2 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-from-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-out-bottom {
+  animation: slide-out-to-bottom 0.4s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-slide-in-left {
+  animation: slide-in-from-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-out-left {
+  animation: slide-out-to-left 0.3s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-slide-in-right {
+  animation: slide-in-from-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in-top {
+  animation: slide-in-from-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scale-out {
+  animation: scale-out 0.2s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s infinite;
+}
+
+.text-typing {
+  font-variant: tabular-nums;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── TRANSITIONS ── */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-smooth-fast {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hide Next.js dev indicator */
 nextjs-portal {
   display: none !important;
+}
+
+/* ── TYPING TEXT EFFECT ── */
+.typing-text {
+  position: relative;
+  display: inline;
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  background: currentColor;
+  animation: typing-cursor 0.7s infinite;
+  vertical-align: -0.125em;
+}
+
+.animate-typing {
+  animation: typing-animation 1.5s steps(40, end);
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 3px solid;
+  border-right-color: inherit;
+  padding-right: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-cursor,
+  .animate-typing {
+    animation: none;
+  }
 }

@@ -93,3 +93,21 @@ def ensure_chat(user_id: str, chat_id: str, title: str = "New Chat") -> dict:
     if row is None:
         raise HTTPException(status_code=403, detail="Chat does not belong to the current user")
     return dict(row)
+
+
+def clear_chat_messages(user_id: str, chat_id: str) -> bool:
+    """Clear all messages from a chat without deleting the chat itself."""
+    conn = get_conn()
+    # First verify the chat belongs to the user
+    chat = conn.execute(
+        "SELECT 1 FROM chats WHERE id=? AND user_id=?",
+        (chat_id, user_id),
+    ).fetchone()
+    if chat is None:
+        conn.close()
+        return False
+    # Delete all messages in the chat
+    cur = conn.execute("DELETE FROM messages WHERE chat_id=?", (chat_id,))
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0

@@ -82,11 +82,11 @@ export default function Sidebar({
       {/* Toggle button — always visible */}
       <button
         onClick={onToggle}
-        className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.1] transition-all"
+        className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.1] transition-all transform hover:scale-110 active:scale-95"
         title={isOpen ? "Close sidebar" : "Open sidebar"}
         id="sidebar-toggle"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform">
           {isOpen ? (
             <>
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -105,19 +105,19 @@ export default function Sidebar({
       {/* Sidebar panel */}
       <aside
         className={`fixed top-0 left-0 h-full z-40 flex flex-col bg-[#111113] border-r border-white/[0.06] transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? "w-64 opacity-100" : "w-0 opacity-0"
+          isOpen ? "w-64 opacity-100 animate-slide-in-left" : "w-0 opacity-0 animate-slide-out-left"
         }`}
       >
         {/* Header — Orlixa branding */}
-        <div className="px-4 pt-4 pb-3 mt-8">
+        <div className="px-4 pt-4 pb-3 mt-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <OrlixaLogo />
         </div>
 
         {/* New chat button */}
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-3 animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <button
             onClick={onNewChat}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600/80 to-violet-600/80 hover:from-indigo-600 hover:to-violet-600 text-white text-sm font-medium transition-all active:scale-[0.98]"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600/80 to-violet-600/80 hover:from-indigo-600 hover:to-violet-600 text-white text-sm font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98]"
             id="new-chat-button"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -139,14 +139,14 @@ export default function Sidebar({
         {/* Chat list */}
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
           {chats.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-white/20 select-none">
+            <div className="flex flex-col items-center justify-center py-10 text-white/20 select-none animate-fade-in">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-50">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <p className="text-xs">No chats yet</p>
             </div>
           )}
-          {chats.map((chat) => {
+          {chats.map((chat, index) => {
             const isActive = chat.id === activeChatId;
             const isDeleting = deletingId === chat.id;
             const isEditing = editingId === chat.id;
@@ -155,14 +155,15 @@ export default function Sidebar({
                 key={chat.id}
                 onClick={() => !isEditing && onSelectChat(chat.id)}
                 onDoubleClick={(e) => handleDoubleClick(e, chat)}
-                className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 ${
+                className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 transform hover:scale-[1.02] animate-in ${
                   isActive
                     ? "bg-indigo-600/20 border border-indigo-500/30"
                     : "hover:bg-white/[0.04] border border-transparent"
                 }`}
+                style={{ animationDelay: `${0.2 + index * 0.05}s` }}
               >
                 {/* Chat icon */}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-shrink-0 ${isActive ? "text-indigo-400" : "text-white/30"}`}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-shrink-0 transition-colors ${isActive ? "text-indigo-400" : "text-white/30"}`}>
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
 
@@ -180,11 +181,11 @@ export default function Sidebar({
                         e.stopPropagation();
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full bg-white/10 text-white text-xs rounded px-1.5 py-0.5 outline-none border border-indigo-500/40 focus:border-indigo-500"
+                      className="w-full bg-white/10 text-white text-xs rounded px-1.5 py-0.5 outline-none border border-indigo-500/40 focus:border-indigo-500 transition-colors"
                     />
                   ) : (
                     <>
-                      <p className={`text-xs font-medium truncate ${isActive ? "text-white" : "text-white/70"}`}>
+                      <p className={`text-xs font-medium truncate transition-colors ${isActive ? "text-white" : "text-white/70"}`}>
                         {chat.title}
                       </p>
                       <p className="text-[10px] text-white/25 mt-0.5">{timeAgo(chat.created_at)}</p>
@@ -196,7 +197,7 @@ export default function Sidebar({
                 {!isEditing && (
                   <button
                     onClick={(e) => handleDeleteClick(e, chat.id)}
-                    className={`flex-shrink-0 p-1 rounded-lg transition-all ${
+                    className={`flex-shrink-0 p-1 rounded-lg transition-all transform ${
                       isDeleting
                         ? "bg-red-500/30 text-red-400"
                         : "opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 hover:bg-red-500/10"

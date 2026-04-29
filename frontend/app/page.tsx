@@ -26,6 +26,7 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!hasStoredSession()) {
@@ -43,12 +44,16 @@ export default function Home() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    clearStoredSession();
-    setCurrentUser(null);
-    setChats([]);
-    setActiveChatId(null);
-    setUploadedFiles([]);
-    setAuthReady(true);
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      clearStoredSession();
+      setCurrentUser(null);
+      setChats([]);
+      setActiveChatId(null);
+      setUploadedFiles([]);
+      setAuthReady(true);
+      setIsLoggingOut(false);
+    }, 300);
   }, []);
 
   const loadChats = useCallback(async () => {
@@ -171,7 +176,7 @@ export default function Home() {
   return (
     <>
       <SplashLoader />
-      <main className="flex h-screen overflow-hidden">
+      <main className={`flex h-screen overflow-hidden transition-smooth ${isLoggingOut ? "animate-fade-out opacity-0" : "opacity-100"}`}>
         <Sidebar
           chats={chats}
           activeChatId={activeChatId}
@@ -186,7 +191,7 @@ export default function Home() {
         <div
           className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}
         >
-          <header className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl">
+          <header className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl animate-slide-in-top">
             <div className={`flex items-center gap-3 ${sidebarOpen ? "" : "pl-10"}`}>
               {!sidebarOpen && <OrlixaLogo compact />}
               {activeChatId && (
@@ -197,7 +202,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06] animate-fade-in" style={{ animationDelay: "0.1s" }}>
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/80 to-violet-500/80 flex items-center justify-center text-xs font-semibold">
                   {(currentUser.full_name || currentUser.email).slice(0, 1).toUpperCase()}
                 </div>
@@ -210,7 +215,7 @@ export default function Home() {
               </div>
 
               {uploadedFiles.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/20 animate-pulse-subtle">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -223,7 +228,8 @@ export default function Home() {
 
               <button
                 onClick={handleLogout}
-                className="px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.07] text-sm text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                disabled={isLoggingOut}
+                className="px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.07] text-sm text-white/70 hover:text-white hover:bg-white/[0.08] transition-all hover:scale-[1.05] disabled:opacity-50 transform"
               >
                 Sign out
               </button>
