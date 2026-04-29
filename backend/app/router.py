@@ -4,6 +4,7 @@ from app.config import UPLOAD_DIR
 from app.web_search import web_search_tool
 from app.llm import generate_answer
 from app.query_refiner import refine_query
+from app.template_manager import get_chat_template
 from app.cache import get_cached, store_cache, get_history, add_history as add_history_db, clear_history
 
 # Phrases that indicate the LLM does not know the answer
@@ -60,6 +61,16 @@ _ACKNOWLEDGEMENT_REPLIES = {
     "ok thanks": "You're welcome.",
     "okay thanks": "You're welcome.",
     "thanks okay": "You're welcome.",
+    "hi": "Hello! How can I help you today?",
+    "hello": "Hello! How can I help you today?",
+    "hey": "Hello! How can I help you today?",
+    "heyy": "Hello! How can I help you today?",
+    "gm": "Good morning! How can I help you today?",
+    "good morning": "Good morning! How can I help you today?",
+    "good afternoon": "Good afternoon! How can I help you today?",
+    "good evening": "Good evening! How can I help you today?",
+    "hi orlixa": "Hello! How can I help you today?",
+    "hello orlixa": "Hello! How can I help you today?",
 }
 _LEAVE_IT_PHRASES = {
     "leave it",
@@ -223,27 +234,30 @@ def _try_document(session_id: str, question: str, history: str, images: list = N
         return None
 
     context = "\n".join(chunks)
-    answer = generate_answer(context, question, "document", history, images=images)
+    template = get_chat_template(session_id)
+    answer = generate_answer(context, question, "document", history, images=images, template=template)
     if _is_uncertain(answer):
         return None
     return {"answer": answer, "source": "document"}
 
-def _try_llm(question: str, history: str, images: list = None):
+def _try_llm(question: str, history: str, images: list = None, session_id: str = None):
     """Step 2: Try direct LLM answer."""
-    answer = generate_answer("", question, "general", history, images=images)
+    template = get_chat_template(session_id) if session_id else None
+    answer = generate_answer("", question, "general", history, images=images, template=template)
     if _is_uncertain(answer):
         print(f"LLM UNCERTAIN -> triggering web fallback for: {question}")
         return None
     return {"answer": answer, "source": "llm"}
 
-def _try_web(question: str, history: str, images: list = None, original_question: str = ""):
+def _try_web(question: str, history: str, images: list = None, original_question: str = "", session_id: str = None):
     """Step 3: Web search fallback."""
     # Use the refined question for search (cleaner), but fall back to original if empty
     search_q = question if question.strip() else (original_question or question)
     context = web_search_tool.invoke({"query": search_q})
     if not context:
         return None
-    answer = generate_answer(context, question, "web", history, images=images)
+    template = get_chat_template(session_id) if session_id else None
+    answer = generate_answer(context, question, "web", history, images=images, template=template)
     if not answer or _is_uncertain(answer):
         return None
     return {"answer": answer, "source": "web"}
@@ -284,20 +298,20 @@ def route_query(session_id: str, question: str) -> dict:
 
     if not result and images:
         # Images present but no docs (or we skipped docs) — try vision LLM
-        result = _try_llm(question, history, images=images)
+        result = _try_llm(question, history, images=images, session_id=session_id)
 
     # Step 2: For live/time-sensitive queries, go straight to web search (skip LLM hallucination)
     if not result and is_live:
         print(f"LIVE QUERY DETECTED -> Prioritizing web search: {question}")
-        result = _try_web(question, history, original_question=original_question)
+        result = _try_web(question, history, original_question=original_question, session_id=session_id)
 
     # Step 3: LLM direct answer for general knowledge
     if not result:
-        result = _try_llm(question, history)
+        result = _try_llm(question, history, session_id=session_id)
 
     # Step 4: Web fallback if LLM was uncertain
     if not result:
-        result = _try_web(question, history, original_question=original_question)
+        result = _try_web(question, history, original_question=original_question, session_id=session_id)
 
     # Final fallback
     if not result:

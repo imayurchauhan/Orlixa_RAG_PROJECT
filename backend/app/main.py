@@ -31,6 +31,15 @@ from app.chat_history import (
     ensure_chat,
     clear_chat_messages,
 )
+from app.template_manager import (
+    list_templates,
+    create_template,
+    update_template,
+    delete_template,
+    set_chat_template,
+    get_template,
+    ensure_default_template,
+)
 
 
 @asynccontextmanager
@@ -82,6 +91,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class TemplateRequest(BaseModel):
+    name: str
+    tone: Optional[str] = ""
+    instructions: str
+    is_default: Optional[bool] = False
+
+class SetChatTemplateRequest(BaseModel):
+    template_id: Optional[str] = None
+
 
 @app.post("/auth/register", status_code=201)
 async def api_register(req: RegisterRequest):
@@ -97,6 +115,7 @@ async def api_login(req: LoginRequest):
 
 @app.get("/auth/me")
 async def api_me(current_user: dict = Depends(get_current_user)):
+    ensure_default_template(current_user["id"])
     return {"user": current_user}
 
 
@@ -147,6 +166,41 @@ async def api_clear_chat_messages(chat_id: str, current_user: dict = Depends(get
     clear_session(chat_id)
     clear_chat_history(chat_id)
     return {"status": "cleared"}
+
+
+# ── Template endpoints ───────────────────────────────────────────────────────
+
+@app.get("/templates")
+async def api_list_templates(current_user: dict = Depends(get_current_user)):
+    return {"templates": list_templates(current_user["id"])}
+
+@app.post("/templates", status_code=201)
+async def api_create_template(req: TemplateRequest, current_user: dict = Depends(get_current_user)):
+    return create_template(current_user["id"], req.name, req.tone or "", req.instructions, req.is_default or False)
+
+@app.put("/templates/{template_id}")
+async def api_update_template(template_id: str, req: TemplateRequest, current_user: dict = Depends(get_current_user)):
+    if not update_template(current_user["id"], template_id, req.name, req.tone or "", req.instructions, req.is_default or False):
+        raise HTTPException(404, "Template not found")
+    return {"status": "updated"}
+
+@app.delete("/templates/{template_id}")
+async def api_delete_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    if not delete_template(current_user["id"], template_id):
+        raise HTTPException(400, "Cannot delete template")
+    return {"status": "deleted"}
+
+@app.post("/chats/{chat_id}/template")
+async def api_set_chat_template(chat_id: str, req: SetChatTemplateRequest, current_user: dict = Depends(get_current_user)):
+    if not set_chat_template(current_user["id"], chat_id, req.template_id):
+        raise HTTPException(404, "Chat not found")
+    
+    # Add a system message notifying the chat of the persona change
+    template = get_template(current_user["id"], req.template_id)
+    if template:
+        add_message(chat_id, "system", f"Persona switched to **{template['name']}** ({template['tone']})")
+        
+    return {"status": "template_updated"}
 
 
 # ── RAG chat endpoint (chat_id-scoped) ───────────────────────────────────────

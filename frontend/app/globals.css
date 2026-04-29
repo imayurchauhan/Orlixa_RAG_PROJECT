@@ -81,7 +81,7 @@ html.light .glass-card {
 }
 
 .bg-mesh {
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.18) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
@@ -100,7 +100,7 @@ html.light .text-header-gradient {
 }
 
 html.light .bg-mesh {
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
@@ -109,41 +109,56 @@ html.light .bg-mesh {
 
 /* ── FADE ANIMATIONS ── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 /* ── SLIDE ANIMATIONS ── */
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes slide-in-from-bottom {
-  from { 
+  from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(12px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes slide-in-from-bottom-2 {
-  from { transform: translateY(8px); }
-  to { transform: translateY(0); }
+.animate-slide-in-top {
+  animation: slide-in-from-top 0.2s ease-out forwards;
 }
 
-@keyframes slide-out-to-bottom {
-  from { 
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to { 
-    opacity: 0;
-    transform: translateY(16px);
-  }
+.animate-slide-in-bottom {
+  animation: slide-in-from-bottom 0.2s ease-out forwards;
 }
 
 @keyframes slide-in-from-left {
@@ -151,6 +166,7 @@ html.light .bg-mesh {
     opacity: 0;
     transform: translateX(-24px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -162,6 +178,7 @@ html.light .bg-mesh {
     opacity: 1;
     transform: translateX(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(-24px);
@@ -173,6 +190,7 @@ html.light .bg-mesh {
     opacity: 0;
     transform: translateX(24px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -184,6 +202,7 @@ html.light .bg-mesh {
     opacity: 0;
     transform: translateY(-12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -196,6 +215,7 @@ html.light .bg-mesh {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -207,6 +227,7 @@ html.light .bg-mesh {
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.95);
@@ -215,14 +236,22 @@ html.light .bg-mesh {
 
 /* ── PULSE ANIMATIONS ── */
 @keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -230,10 +259,14 @@ html.light .bg-mesh {
 
 /* ── TYPING ANIMATIONS ── */
 @keyframes typing-cursor {
-  0%, 49% {
+
+  0%,
+  49% {
     opacity: 1;
   }
-  50%, 100% {
+
+  50%,
+  100% {
     opacity: 0;
   }
 }
@@ -242,6 +275,7 @@ html.light .bg-mesh {
   from {
     width: 0;
   }
+
   to {
     width: 100%;
   }
@@ -252,6 +286,7 @@ html.light .bg-mesh {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -259,9 +294,12 @@ html.light .bg-mesh {
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.1);
   }
+
   50% {
     box-shadow: 0 0 8px 4px rgba(99, 102, 241, 0.05);
   }
@@ -364,6 +402,7 @@ nextjs-portal {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .typing-cursor,
   .animate-typing {
     animation: none;
@@ -482,6 +521,7 @@ html.light .text-red-400 {
 html.light .text-violet-300 {
   color: #6d28d9;
 }
+
 html.light .bg-violet-500\/20 {
   background-color: rgba(109, 40, 217, 0.1);
 }
@@ -489,6 +529,7 @@ html.light .bg-violet-500\/20 {
 html.light .text-sky-300 {
   color: #0369a1;
 }
+
 html.light .bg-sky-500\/20 {
   background-color: rgba(3, 105, 161, 0.1);
 }
@@ -496,6 +537,7 @@ html.light .bg-sky-500\/20 {
 html.light .text-amber-300 {
   color: #b45309;
 }
+
 html.light .bg-amber-500\/20 {
   background-color: rgba(180, 83, 9, 0.1);
 }
@@ -581,4 +623,191 @@ html.light [class*="bg-black/25"] {
 
 html.light [class*="border-white/[0.08]"] {
   border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* --- Markdown Content Styles --- */
+.markdown-content {
+  @apply leading-relaxed;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  @apply font-bold mt-4 mb-2 text-white/90;
+}
+
+.markdown-content h1 {
+  @apply text-lg sm:text-xl;
+}
+
+.markdown-content h2 {
+  @apply text-base sm:text-lg;
+}
+
+.markdown-content h3 {
+  @apply text-sm sm:text-base;
+}
+
+.markdown-content p {
+  @apply mb-3 last:mb-0 whitespace-pre-wrap break-words;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply mb-4 ml-4 space-y-1;
+}
+
+.markdown-content ul {
+  @apply list-disc;
+}
+
+.markdown-content ol {
+  @apply list-decimal;
+}
+
+.markdown-content li {
+  @apply pl-1;
+}
+
+.markdown-content strong {
+  @apply font-bold text-white;
+}
+
+.markdown-content em {
+  @apply italic;
+}
+
+.markdown-content code {
+  @apply px-1.5 py-0.5 rounded bg-white/10 font-mono text-[0.9em] text-indigo-300;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-indigo-500/30 pl-4 italic text-white/60 my-4;
+}
+
+/* Light mode overrides for markdown */
+html.light .markdown-content h1,
+html.light .markdown-content h2,
+html.light .markdown-content h3,
+html.light .markdown-content strong {
+  @apply text-slate-900;
+}
+
+html.light .markdown-content p,
+html.light .markdown-content li {
+  @apply text-slate-700;
+}
+
+html.light .markdown-content code {
+  @apply bg-slate-100 text-indigo-700 border border-slate-200;
+}
+
+/* AI Persona Modal Light Mode Fixes */
+html.light [class*="bg-[#111113]"] {
+  @apply bg-white border-slate-200;
+}
+
+html.light [class*="bg-[#111113]"] h2,
+html.light [class*="bg-[#111113]"] h3,
+html.light [class*="bg-[#111113]"] .text-white\/80,
+html.light [class*="bg-[#111113]"] span.text-white,
+html.light [class*="bg-[#111113]"] span.text-white\/90 {
+  @apply text-slate-900;
+}
+
+html.light [class*="bg-[#111113]"] p.text-white\/40,
+html.light [class*="bg-[#111113]"] p.text-white\/50,
+html.light [class*="bg-[#111113]"] label.text-white\/50,
+html.light [class*="bg-[#111113]"] p.text-white\/20 {
+  @apply text-slate-500;
+}
+
+html.light [class*="bg-[#111113]"] p.text-white\/30 {
+  @apply text-slate-400;
+}
+
+html.light [class*="bg-[#111113]"] .border-white\/5,
+html.light [class*="bg-[#111113]"] .border-white\/10 {
+  @apply border-slate-100;
+}
+
+html.light [class*="bg-[#111113]"] .bg-white\/5 {
+  @apply bg-slate-50 border-slate-200;
+}
+
+html.light [class*="bg-[#111113]"] input,
+html.light [class*="bg-[#111113]"] textarea {
+  @apply bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300;
+}
+
+html.light [class*="bg-[#111113]"] .bg-white\/\[0\.03\] {
+  @apply bg-slate-50 border-slate-100;
+}
+
+html.light [class*="bg-[#111113]"] .bg-white\/\[0\.02\] {
+  @apply bg-slate-50\/50;
+}
+
+/* Sidebar toggle visibility */
+html.light .fixed.top-3 .bg-white\/\[0\.04\] {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.user-message-markdown p,
+.user-message-markdown strong,
+.user-message-markdown li,
+.user-message-markdown h1,
+.user-message-markdown h2,
+.user-message-markdown h3,
+html.light .user-message-markdown p,
+html.light .user-message-markdown strong,
+html.light .user-message-markdown li,
+html.light .user-message-markdown h1,
+html.light .user-message-markdown h2,
+html.light .user-message-markdown h3 {
+  color: #ffffff !important;
+}
+
+/* --- Persona Dropdown Theme Styles --- */
+.persona-dropdown {
+  background-color: rgba(15, 15, 15, 0.95) !important;
+  backdrop-filter: blur(24px) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.persona-dropdown span.text-white\/30 {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.persona-dropdown span.text-white\/80 {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Light mode overrides for dropdown */
+html.light .persona-dropdown {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.light .persona-dropdown .border-b {
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+html.light .persona-dropdown span.text-white\/30 {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+html.light .persona-dropdown span.text-white\/80 {
+  color: rgba(0, 0, 0, 0.8);
+}
+
+html.light .persona-dropdown button:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+html.light .persona-dropdown .bg-indigo-500\/10 {
+  background-color: rgba(79, 70, 229, 0.08);
 }

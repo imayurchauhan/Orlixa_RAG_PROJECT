@@ -6,6 +6,8 @@ import Sidebar from "./components/Sidebar";
 import ThemeToggle from "./components/ThemeToggle";
 import SplashLoader from "./components/SplashLoader";
 import AuthPanel from "./components/AuthPanel";
+import TemplateManager from "./components/TemplateManager";
+import PersonaSelector from "./components/PersonaSelector";
 import {
   ApiError,
   AuthUser,
@@ -27,6 +29,12 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [chatRefreshKey, setChatRefreshKey] = useState(0);
+
+  useEffect(() => {
+    (window as any).toggleTemplateManager = () => setShowTemplateManager(true);
+  }, []);
 
   useEffect(() => {
     if (!hasStoredSession()) {
@@ -190,7 +198,7 @@ export default function Home() {
 
         {/* small fixed logo button shown when sidebar is closed so users can open it */}
         {!sidebarOpen && (
-          <div className="fixed top-4 left-3 z-50">
+          <div className="fixed top-3 sm:top-4 left-3 z-[60]">
             <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
               <div className="p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
                 <img src="/logo.svg" alt="Orlixa" width={28} height={28} />
@@ -200,12 +208,23 @@ export default function Home() {
         )}
 
         <div className={`flex flex-col flex-1 w-full min-w-0 transition-all duration-300` }>
-          <header className={`flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl animate-slide-in-top gap-2 sm:gap-0 ${!sidebarOpen ? 'pl-12 sm:pl-14' : ''}`}>
+          <header className={`flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/[0.06] bg-black/30 backdrop-blur-xl animate-slide-in-top gap-2 sm:gap-0 z-50 ${!sidebarOpen ? 'pl-12 sm:pl-14' : ''}`}>
             <div className={`flex items-center gap-2 sm:gap-3 min-w-0 flex-1` }>
               {activeChatId && (
-                <span className="text-xs sm:text-sm text-white/50 font-medium truncate max-w-[150px] sm:max-w-[200px]">
-                  {chats.find((c) => c.id === activeChatId)?.title ?? ""}
-                </span>
+                <>
+                  <span className="text-xs sm:text-sm text-white/50 font-medium truncate max-w-[120px] sm:max-w-[180px]">
+                    {chats.find((c) => c.id === activeChatId)?.title ?? ""}
+                  </span>
+                  <div className="w-px h-3 bg-white/10 mx-1" />
+                  <PersonaSelector 
+                    chatId={activeChatId}
+                    currentTemplateId={chats.find(c => c.id === activeChatId)?.template_id}
+                    onTemplateChanged={() => {
+                      loadChats();
+                      setChatRefreshKey(k => k + 1);
+                    }}
+                  />
+                </>
               )}
             </div>
 
@@ -250,18 +269,20 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-hidden">
-            <div className="w-full max-w-3xl mx-auto h-full px-0">
-              <Chat
-                key={activeChatId ?? "no-chat"}
-                chatId={activeChatId}
-                sessionId={activeChatId ?? ""}
-                onFilesChanged={fetchFiles}
-              />
-            </div>
+          <div className="flex-1 h-full overflow-hidden">
+            <Chat
+              key={(activeChatId ?? "no-chat") + chatRefreshKey}
+              chatId={activeChatId}
+              sessionId={activeChatId ?? ""}
+              onFilesChanged={fetchFiles}
+            />
           </div>
         </div>
       </main>
+
+      {showTemplateManager && (
+        <TemplateManager onClose={() => setShowTemplateManager(false)} />
+      )}
     </>
   );
 }

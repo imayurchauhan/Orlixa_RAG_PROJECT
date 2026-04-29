@@ -6,6 +6,16 @@ export interface Chat {
   title: string;
   created_at: string;
   user_id?: string;
+  template_id?: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  tone: string;
+  instructions: string;
+  is_default: boolean;
+  created_at: string;
 }
 
 export interface ChatMessage {
@@ -226,4 +236,41 @@ export async function clearSession(sessionId: string): Promise<{ status: string 
     body: JSON.stringify({ session_id: sessionId }),
   });
   return res.json();
+}
+
+export async function listTemplates(): Promise<Template[]> {
+  const res = await apiFetch("/templates");
+  const data = await res.json();
+  return data.templates;
+}
+
+export async function createTemplate(template: Partial<Template>): Promise<Template> {
+  const res = await apiFetch("/templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(template),
+  });
+  return res.json();
+}
+
+export async function updateTemplate(id: string, template: Partial<Template>): Promise<void> {
+  await apiFetch(`/templates/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(template),
+  });
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  await apiFetch(`/templates/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function setChatTemplate(chatId: string, templateId: string | null): Promise<void> {
+  await apiFetch(`/chats/${encodeURIComponent(chatId)}/template`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template_id: templateId }),
+  });
 }

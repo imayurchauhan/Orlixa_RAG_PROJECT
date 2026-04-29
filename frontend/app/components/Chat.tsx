@@ -9,6 +9,8 @@ import {
   UploadResult,
   ChatMessage,
 } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -200,8 +202,9 @@ export default function Chat({
   };
 
   return (
-    <div className="flex flex-col h-full relative">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 scroll-smooth pb-28">
+    <div className="flex flex-col h-full relative w-full">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-smooth pb-28">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-white/30 select-none animate-fade-in px-4">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-3 sm:mb-4 opacity-40 animate-pulse">
@@ -244,12 +247,11 @@ export default function Chat({
                     ))}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap break-words">
-                  {displayText}
-                  {isTyping && (
-                    <span className="typing-cursor inline-block ml-0.5" />
-                  )}
-                </p>
+                <div className={`markdown-content ${msg.role === "user" ? "user-message-markdown" : ""}`}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {displayText + (isTyping ? " ▊" : "")}
+                  </ReactMarkdown>
+                </div>
                 {msg.source && SOURCE_BADGE[msg.source] && !isTyping && (
                   <span className={`inline-block mt-1.5 sm:mt-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium ${SOURCE_BADGE[msg.source].color} animate-fade-in`}>
                     {SOURCE_BADGE[msg.source].label}
@@ -281,6 +283,7 @@ export default function Chat({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Input area */}

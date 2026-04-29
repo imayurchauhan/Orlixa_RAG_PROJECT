@@ -8,29 +8,27 @@ _client = Groq(api_key=GROQ_API_KEY)
 
 DOCUMENT_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
-     "You are an expert document assistant.\n"
-     "If the user asks 'what is this attachment', 'what is in this file', or similar, "
-     "refer to the provided Context below as the attachment/file.\n"
+     "You are Orlixa, a strictly professional and highly intelligent AI assistant.\n"
+     "Provide direct, factual, and well-structured responses.\n"
+     "Avoid informal greetings. Get straight to the point.\n"
+     "If corrected by the user, acknowledge it briefly and proceed with the correct info.\n"
+     "DO NOT use redundant section headers like '🎯 Direct Answer' or 'The Person in the Picture'.\n"
      "Use the chat history to understand follow-up references like 'this', 'it', "
-     "'that description', or 'explain in more detail'.\n"
-     "If the user asks for a longer or point-wise answer, provide a fuller structured response.\n\n"
+     "'that description', or 'explain in more detail'.\n\n"
      "{question_guidance}\n\n"
-     "Structure answer:\n"
-     "1. Direct Answer\n"
-     "2. Explanation\n"
-     "3. Supporting Details\n"
-     "4. Summary\n\n"
-     "If answer not found:\n"
-     "Return exactly:\n"
-     "NOT_FOUND\n"),
+     "If the answer is not found in the context, return exactly: NOT_FOUND\n"),
     ("user", "--- DOCUMENT CONTEXT ---\n{context}\n\n--- CHAT HISTORY ---\n{history}\n\nQuestion: {question}\n\nAnswer:")
 ])
 
 WEB_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a helpful assistant. Today's date is {current_date}.\n"
+     "You are a professional research intelligence system. Today's date is {current_date}.\n"
      "Answer the user's question USING ONLY the web search results provided below.\n"
-     "Give a direct, clear, and informative answer.\n"
+     "Provide a structured, clean, and corporate-professional answer.\n"
+     "Avoid wordy introductions or personality-driven headers.\n"
+     "DO NOT use redundant headers like 'Information About X' or 'The Person in the Picture'.\n"
+     "If the user corrects you, acknowledge briefly and provide the corrected facts directly.\n"
+     "Use **bold text** for key facts and bullet points for lists if multiple points exist.\n\n"
      "CRITICAL INSTRUCTIONS:\n"
      "- If the user asks for a match result/winner and the teams are in the context, EXTRACT the winner directly.\n"
      "- NEVER suggest that the user do their own search online.\n"
@@ -41,18 +39,14 @@ WEB_PROMPT = ChatPromptTemplate.from_messages([
 
 GENERAL_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a friendly, conversational AI assistant. Today's date is {current_date}.\n"
-     "For normal conversation (greetings, thanks, casual chat, follow-ups), respond naturally and warmly.\n"
-     "For general knowledge questions, answer confidently and clearly.\n"
-     "Use the chat history carefully to resolve follow-up references like 'this', 'it', "
-     "'that answer', 'same one', or 'explain in more detail'.\n"
-     "If the user explicitly asks for a detailed, long, or point-wise answer, provide it instead of a short summary.\n"
+     "You are Orlixa, a professional and concise AI assistant. Today's date is {current_date}.\n"
+     "Respond with direct, factual information. Be as concise as possible.\n"
+     "NEVER use informal greetings or personality-based intros.\n"
+     "DO NOT use redundant headers like 'Summary' or 'The Individual in the Picture'.\n"
+     "If corrected, acknowledge briefly and move on with the correct answer.\n"
+     "Use the chat history carefully but prioritize a professional, neutral tone.\n"
      "{question_guidance}\n"
-     "CRITICAL: If the question requires LIVE real-time data, current events, today's specific information, "
-     "or any data that changes daily (e.g., live sports scores, weather, stock prices, match results from today), "
-     "you MUST respond with EXACTLY and ONLY the word: NOT_FOUND\n"
-     "Do NOT suggest websites, do NOT give historical data as a substitute, and do NOT explain why you cannot answer.\n"
-     "Just say: NOT_FOUND"),
+     "CRITICAL: If the question requires LIVE real-time data or any daily changing information, you MUST respond with EXACTLY and ONLY the word: NOT_FOUND"),
     ("user", "{history}Question: {question}")
 ])
 
@@ -159,8 +153,13 @@ def _build_multimodal_user_text(question: str, history: str = "", context: str =
     return "\n\n".join(sections)
 
 
-def _build_multimodal_system_message(mode: str, question: str) -> str:
+def _build_multimodal_system_message(mode: str, question: str, template: dict = None) -> str:
     parts = []
+
+    if template:
+        tone = template.get("tone")
+        instr = template.get("instructions")
+        parts.append(f"Persona/Tone: {tone}\nCustom System Instructions: {instr}\n")
 
     if mode == "document":
         parts.extend([
@@ -179,6 +178,9 @@ def _build_multimodal_system_message(mode: str, question: str) -> str:
         ])
 
     parts.append("Do not invent details that are not visible or supported. If something is unclear or not visible, say so.")
+    parts.append("If the user corrects you, acknowledge it briefly and update your findings immediately.")
+    parts.append("DO NOT use redundant headers like 'The Individual in the Picture' or 'Key Facts'.")
+    parts.append("Use professional Markdown formatting. Use bold text and bullet points to structure your response clearly.")
 
     if _is_text_comparison(question):
         parts.append(
@@ -197,10 +199,10 @@ def _build_multimodal_system_message(mode: str, question: str) -> str:
 
     if _wants_detailed_answer(question):
         parts.append(
-            "The user wants a long, detailed answer. Do not give a brief summary. Provide a rich, point-wise description that covers the overall scene, each visible person or object, positions, actions, colors or clothing, foreground, background, and notable details."
+            "The user wants a long, detailed answer. Provide a rich, structured description using Markdown headers and bullet points. Cover the overall scene, each visible person/object, positions, actions, and notable details."
         )
     else:
-        parts.append("Answer directly, clearly, and in context.")
+        parts.append("Answer directly, clearly, and in a professional format.")
 
     return "\n".join(parts)
 
@@ -213,7 +215,7 @@ def _call_groq(prompt_value):
     resp = _client.chat.completions.create(
         model=LLM_MODEL,
         messages=messages,  # type: ignore
-        max_tokens=512,
+        max_tokens=1024,
         temperature=0.3,
         stream=True
     )
@@ -223,9 +225,15 @@ def _call_groq(prompt_value):
 
 _llm_runnable = RunnableLambda(_call_groq)
 
-def generate_answer(context: str, question: str, mode: str, history: str = "", images=None) -> str:
+def generate_answer(context: str, question: str, mode: str, history: str = "", images=None, template: dict = None) -> str:
     current_date = datetime.date.today().strftime("%B %d, %Y")
     
+    persona_instr = ""
+    if template:
+        tone = template.get("tone")
+        instr = template.get("instructions")
+        persona_instr = f"### 🎭 Persona & Tone\n- **Tone**: {tone}\n- **Custom Rules**: {instr}\n\n"
+
     if images:
         import base64
         content = [{"type": "text", "text": _build_multimodal_user_text(question, history, context)}]  # type: ignore
@@ -242,14 +250,14 @@ def generate_answer(context: str, question: str, mode: str, history: str = "", i
                 })
 
         messages = [
-            {"role": "system", "content": _build_multimodal_system_message(mode, question)},
+            {"role": "system", "content": _build_multimodal_system_message(mode, question, template)},
             {"role": "user", "content": content}
         ]
         
         resp = _client.chat.completions.create(
             model="meta-llama/llama-4-scout-17b-16e-instruct", # type: ignore
             messages=messages, # type: ignore
-            max_tokens=1024,
+            max_tokens=2048,
             temperature=0.3,
             stream=True
         )
@@ -257,7 +265,13 @@ def generate_answer(context: str, question: str, mode: str, history: str = "", i
         return "".join(gen).strip()
 
     if mode == "document":
-        chain = DOCUMENT_PROMPT | _llm_runnable
+        prompt = DOCUMENT_PROMPT
+        if persona_instr:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", persona_instr + DOCUMENT_PROMPT.messages[0].prompt.template),
+                DOCUMENT_PROMPT.messages[1]
+            ])
+        chain = prompt | _llm_runnable
         gen = chain.invoke({
             "context": context,
             "history": history,
@@ -265,10 +279,22 @@ def generate_answer(context: str, question: str, mode: str, history: str = "", i
             "question_guidance": _build_question_guidance(question),
         })
     elif mode == "web":
-        chain = WEB_PROMPT | _llm_runnable
+        prompt = WEB_PROMPT
+        if persona_instr:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", persona_instr + WEB_PROMPT.messages[0].prompt.template),
+                WEB_PROMPT.messages[1]
+            ])
+        chain = prompt | _llm_runnable
         gen = chain.invoke({"context": context, "history": history, "question": question, "current_date": current_date})
     else:
-        chain = GENERAL_PROMPT | _llm_runnable
+        prompt = GENERAL_PROMPT
+        if persona_instr:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", persona_instr + GENERAL_PROMPT.messages[0].prompt.template),
+                GENERAL_PROMPT.messages[1]
+            ])
+        chain = prompt | _llm_runnable
         gen = chain.invoke({
             "history": history,
             "question": question,

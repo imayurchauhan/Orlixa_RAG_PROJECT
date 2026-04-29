@@ -38,10 +38,22 @@ def init_db():
             source TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS templates (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            tone TEXT,
+            instructions TEXT,
+            is_default BOOLEAN DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     chat_columns = {row["name"] for row in conn.execute("PRAGMA table_info(chats)").fetchall()}
     if "user_id" not in chat_columns:
         conn.execute("ALTER TABLE chats ADD COLUMN user_id TEXT")
+    if "template_id" not in chat_columns:
+        conn.execute("ALTER TABLE chats ADD COLUMN template_id TEXT")
 
     user_indexes = {
         row["name"] for row in conn.execute(

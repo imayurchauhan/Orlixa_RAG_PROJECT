@@ -208,8 +208,19 @@ export default function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-white/[0.04]">
-          <p className="text-[9px] sm:text-[10px] text-white/15 text-center select-none">Double-click title to rename</p>
+        <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-white/[0.04] space-y-2">
+          <button 
+            onClick={() => (window as any).toggleTemplateManager?.()}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-all group"
+          >
+            <div className="p-1.5 rounded-lg bg-white/[0.03] group-hover:bg-indigo-500/10 group-hover:text-indigo-400 transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" />
+              </svg>
+            </div>
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">AI Personas</span>
+          </button>
+          <p className="text-[9px] sm:text-[10px] text-white/15 text-center select-none pt-1">Double-click title to rename</p>
         </div>
       </aside>
     </>
