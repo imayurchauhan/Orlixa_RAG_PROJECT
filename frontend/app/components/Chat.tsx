@@ -200,8 +200,8 @@ export default function Chat({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 scroll-smooth">
+    <div className="flex flex-col h-full relative">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4 scroll-smooth pb-28">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-white/30 select-none animate-fade-in px-4">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-3 sm:mb-4 opacity-40 animate-pulse">
@@ -228,7 +228,7 @@ export default function Chat({
               <div
                 className={`max-w-[85%] sm:max-w-[80%] px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl text-xs sm:text-sm leading-relaxed transition-all duration-300 animate-in ${
                   msg.role === "user"
-                    ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-br-md hover:shadow-lg hover:shadow-indigo-500/20 transform hover:scale-[1.02]"
+                    ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white-force rounded-br-md hover:shadow-lg hover:shadow-indigo-500/20 transform hover:scale-[1.02]"
                     : `bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm hover:bg-white/[0.08] ${
                         isTyping ? "shadow-lg shadow-indigo-500/10 border-indigo-500/30" : ""
                       }`
@@ -284,7 +284,7 @@ export default function Chat({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-2 sm:px-4 py-2 sm:py-3 animate-slide-in-bottom">
+      <div className="sticky bottom-0 border-t border-white/[0.06] bg-black/20 backdrop-blur-xl px-2 sm:px-4 py-2 sm:py-3 animate-slide-in-bottom">
         <div className="max-w-3xl mx-auto">
           {/* Pending file chips */}
           {pendingFiles.length > 0 && (
@@ -380,7 +380,7 @@ export default function Chat({
             <button
               onClick={handleSend}
               disabled={(loading || uploading || !chatId) || (!input.trim() && pendingFiles.length === 0)}
-              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95 flex-shrink-0"
+              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white-force hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95 flex-shrink-0"
               id="send-button"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">

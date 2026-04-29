@@ -4,10 +4,31 @@
 :root {
   --background: #09090b;
   --foreground: #fafafa;
+  color-scheme: dark;
+}
+
+html.light {
+  --background: #f8f8f9;
+  --foreground: #1a1a1a;
+  color-scheme: light;
+}
+
+.text-white-force {
+  color: #ffffff !important;
+}
+
+html.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  color-scheme: dark;
 }
 
 * {
   scrollbar-width: thin;
+  scrollbar-color: rgba(0 0 0 / 0.1) transparent;
+}
+
+html.dark * {
   scrollbar-color: rgba(255 255 255 / 0.08) transparent;
 }
 
@@ -20,13 +41,70 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255 255 255 / 0.08);
+  background: rgba(0 0 0 / 0.1);
   border-radius: 3px;
+}
+
+html.dark *::-webkit-scrollbar-thumb {
+  background: rgba(255 255 255 / 0.08);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.light body {
+  background: #f8f8f9 !important;
+  color: #1a1a1a !important;
+}
+
+html.dark body {
+  background: #09090b;
+  color: #fafafa;
+}
+
+/* ── PREMIUM UTILITIES ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3);
+}
+
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+.bg-mesh {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.18) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.18) 0px, transparent 50%);
+}
+
+.text-header-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, #ffffff, #ffffff, rgba(255, 255, 255, 0.4));
+}
+
+html.light .text-header-gradient {
+  background-image: linear-gradient(to right, #1a1a1a, #1a1a1a, rgba(26, 26, 26, 0.4));
+}
+
+html.light .bg-mesh {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
 }
 
 /* ── FADE ANIMATIONS ── */
@@ -290,4 +368,217 @@ nextjs-portal {
   .animate-typing {
     animation: none;
   }
+}
+
+/* ── EXPLICIT LIGHT MODE OVERRIDES ── */
+html.light {
+  background: #f8f8f9;
+  color: #1a1a1a;
+}
+
+html.light body {
+  background: #f8f8f9 !important;
+  color: #1a1a1a !important;
+}
+
+html.light * {
+  scrollbar-color: rgba(0 0 0 / 0.15) transparent;
+}
+
+html.light main,
+html.light section,
+html.light article {
+  background: inherit;
+  color: inherit;
+}
+
+/* Light mode specific utilities */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+html.light input:focus,
+html.light textarea:focus {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Light mode button styles */
+html.light button {
+  color: inherit;
+}
+
+/* Light mode text opacity utilities */
+html.light .text-white {
+  color: #1a1a1a;
+}
+
+html.light .text-white\/50 {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+html.light .text-white\/60 {
+  color: rgba(0, 0, 0, 0.75);
+}
+
+html.light .text-white\/30 {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+html.light .text-white\/25 {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+html.light .text-white\/35 {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+html.light .text-white\/20 {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+html.light .text-white\/15 {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+html.light .text-white\/85 {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+html.light .text-white\/40 {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+html.light .text-white\/70 {
+  color: rgba(0, 0, 0, 0.75);
+}
+
+html.light .text-white\/90 {
+  color: rgba(0, 0, 0, 0.95);
+}
+
+html.light .text-indigo-400 {
+  color: #4f46e5;
+}
+
+html.light .text-violet-400 {
+  color: #7c3aed;
+}
+
+html.light .text-red-400 {
+  color: #dc2626;
+}
+
+/* Source Badge Overrides */
+html.light .text-violet-300 {
+  color: #6d28d9;
+}
+html.light .bg-violet-500\/20 {
+  background-color: rgba(109, 40, 217, 0.1);
+}
+
+html.light .text-sky-300 {
+  color: #0369a1;
+}
+html.light .bg-sky-500\/20 {
+  background-color: rgba(3, 105, 161, 0.1);
+}
+
+html.light .text-amber-300 {
+  color: #b45309;
+}
+html.light .bg-amber-500\/20 {
+  background-color: rgba(180, 83, 9, 0.1);
+}
+
+/* Light mode background opacity utilities */
+html.light .bg-white\/\[0\.04\] {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+html.light .bg-white\/\[0\.06\] {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light .bg-white\/\[0\.1\] {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+html.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+html.light .bg-white\/\[0\.05\] {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+html.light .bg-white\/30 {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+html.light .bg-white\/20 {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+html.light .bg-black\/25 {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+html.light .bg-black\/30 {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+html.light .bg-black\/20 {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Light mode border opacity utilities */
+html.light .border-white\/\[0\.06\] {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+html.light .border-white\/\[0\.08\] {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+html.light .border-white\/\[0\.04\] {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light .border-white\/\[0\.07\] {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light mode specific components */
+html.light [class*="bg-[#111113]"] {
+  background-color: #ffffff;
+}
+
+html.light [class*="bg-[#09090b]"] {
+  background-color: #f8f8f9;
+}
+
+html.light [class*="bg-black/[0.06]"] {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light [class*="bg-black/[0.08]"] {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+html.light [class*="bg-black/25"] {
+  background-color: #ffffff;
+}
+
+html.light [class*="border-white/[0.08]"] {
+  border-color: rgba(0, 0, 0, 0.12);
 }

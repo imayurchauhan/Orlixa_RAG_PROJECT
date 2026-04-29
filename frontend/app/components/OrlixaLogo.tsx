@@ -6,9 +6,14 @@ import Image from "next/image";
  * Orlixa brand logo with animated letter reveal and pulsing glow.
  * Used in sidebar header and collapsed-sidebar header.
  */
-export default function OrlixaLogo({ compact = false }: { compact?: boolean }) {
+export default function OrlixaLogo({ compact = false, onClick }: { compact?: boolean; onClick?: () => void }) {
   return (
-    <div className="orlixa-brand-group flex items-center gap-2.5 select-none cursor-default">
+    <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`orlixa-brand-group flex items-center gap-2.5 select-none ${onClick ? "cursor-pointer" : "cursor-default"}`}
+    >
       {/* Animated neural-network icon */}
       <div className="orlixa-logo-icon flex-shrink-0">
         <Image
