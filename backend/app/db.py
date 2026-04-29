@@ -48,6 +48,12 @@ def init_db():
             is_default BOOLEAN DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS user_otps (
+            email TEXT PRIMARY KEY,
+            otp_code TEXT NOT NULL,
+            expires_at DATETIME NOT NULL
+        );
     """)
     chat_columns = {row["name"] for row in conn.execute("PRAGMA table_info(chats)").fetchall()}
     if "user_id" not in chat_columns:

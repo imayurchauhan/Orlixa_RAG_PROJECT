@@ -745,7 +745,7 @@ html.light [class*="bg-[#111113]"] .bg-white\/\[0\.03\] {
 }
 
 html.light [class*="bg-[#111113]"] .bg-white\/\[0\.02\] {
-  @apply bg-slate-50\/50;
+  @apply bg-slate-50/50;
 }
 
 /* Sidebar toggle visibility */

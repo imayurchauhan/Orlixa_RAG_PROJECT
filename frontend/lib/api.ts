@@ -138,6 +138,26 @@ export async function loginWithEmail(email: string, password: string): Promise<A
   return storeAuth(await res.json());
 }
 
+export async function requestOtp(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/auth/otp/request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw await buildError(res);
+  return res.json();
+}
+
+export async function verifyOtp(email: string, otpCode: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/otp/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp_code: otpCode }),
+  });
+  if (!res.ok) throw await buildError(res);
+  return storeAuth(await res.json());
+}
+
 export async function fetchCurrentUser(): Promise<AuthUser> {
   const res = await apiFetch("/auth/me");
   const data = await res.json();

@@ -7,6 +7,7 @@ import re
 import secrets
 import time
 import uuid
+import datetime
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException
@@ -246,6 +247,71 @@ def upsert_google_user(credential: str) -> dict:
 
     conn.close()
     return serialize_user(row)
+
+
+def generate_otp(email: str) -> str:
+    normalized_email = normalize_email(email)
+    if not validate_email(normalized_email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    expires_at = datetime.datetime.now() + datetime.timedelta(minutes=10)
+
+    conn = get_conn()
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO user_otps (email, otp_code, expires_at)
+        VALUES (?, ?, ?)
+        """,
+        (normalized_email, otp_code, expires_at.isoformat()),
+    )
+    conn.commit()
+    conn.close()
+
+    # In a real app, send this via email. For now, log it.
+    print(f"\n[OTP] Code for {normalized_email}: {otp_code}\n")
+        
+    return otp_code
+
+
+def verify_otp(email: str, otp_code: str) -> dict:
+    normalized_email = normalize_email(email)
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM user_otps WHERE email=? AND otp_code=?", (normalized_email, otp_code)
+    ).fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=401, detail="Invalid OTP code")
+
+    expires_at = datetime.datetime.fromisoformat(row["expires_at"])
+    if expires_at < datetime.datetime.now():
+        conn.execute("DELETE FROM user_otps WHERE email=?", (normalized_email,))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=401, detail="OTP code expired")
+
+    # Success: Delete OTP and return user
+    conn.execute("DELETE FROM user_otps WHERE email=?", (normalized_email,))
+    conn.commit()
+
+    # Get or create user
+    user_row = conn.execute("SELECT * FROM users WHERE email=?", (normalized_email,)).fetchone()
+    if user_row is None:
+        user_id = uuid.uuid4().hex
+        conn.execute(
+            """
+            INSERT INTO users (id, email, full_name, auth_provider)
+            VALUES (?, ?, ?, ?)
+            """,
+            (user_id, normalized_email, normalized_email.split("@")[0], "otp"),
+        )
+        conn.commit()
+        user_row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+
+    conn.close()
+    return serialize_user(user_row)
 
 
 def build_auth_response(user: dict) -> dict:

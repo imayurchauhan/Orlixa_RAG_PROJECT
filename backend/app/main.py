@@ -19,6 +19,8 @@ from app.auth import (
     authenticate_user,
     build_auth_response,
     get_current_user,
+    generate_otp,
+    verify_otp,
 )
 from app.chat_history import (
     create_chat,
@@ -91,6 +93,13 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class OtpRequest(BaseModel):
+    email: str
+
+class OtpVerifyRequest(BaseModel):
+    email: str
+    otp_code: str
+
 class TemplateRequest(BaseModel):
     name: str
     tone: Optional[str] = ""
@@ -110,6 +119,18 @@ async def api_register(req: RegisterRequest):
 @app.post("/auth/login")
 async def api_login(req: LoginRequest):
     user = authenticate_user(req.email, req.password)
+    return build_auth_response(user)
+
+
+@app.post("/auth/otp/request")
+async def api_otp_request(req: OtpRequest):
+    generate_otp(req.email)
+    return {"message": "OTP sent successfully"}
+
+
+@app.post("/auth/otp/verify")
+async def api_otp_verify(req: OtpVerifyRequest):
+    user = verify_otp(req.email, req.otp_code)
     return build_auth_response(user)
 
 
