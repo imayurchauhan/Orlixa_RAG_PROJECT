@@ -10,7 +10,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.config import UPLOAD_DIR
-from app.db import init_db
+from app.db import init_db, get_conn
 from app.rag import index_document, clear_session
 from app.router import route_query, clear_chat_history
 from app.utils import validate_file
@@ -41,6 +41,16 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 @app.get("/")
 def root():
     return {"message": "Orlixa API Running"}
+
+
+def _ensure_chat_record(chat_id: str, title: str = "New Chat") -> None:
+    conn = get_conn()
+    conn.execute(
+        "INSERT OR IGNORE INTO chats (id, title) VALUES (?, ?)",
+        (chat_id, title),
+    )
+    conn.commit()
+    conn.close()
 
 
 # ── Pydantic models ──────────────────────────────────────────────────────────
@@ -79,19 +89,18 @@ async def api_list_chats():
 @app.get("/chats/{chat_id}")
 async def api_get_chat(chat_id: str):
     if not chat_exists(chat_id):
-        raise HTTPException(404, "Chat not found")
+        return {"messages": []}
     return {"messages": get_chat_messages(chat_id)}
 
 @app.post("/messages", status_code=201)
 async def api_add_message(req: AddMessageRequest):
     if not chat_exists(req.chat_id):
-        raise HTTPException(404, "Chat not found")
+        _ensure_chat_record(req.chat_id)
     return add_message(req.chat_id, req.role, req.content, req.source)
 
 @app.delete("/chats/{chat_id}")
 async def api_delete_chat(chat_id: str):
-    if not delete_chat(chat_id):
-        raise HTTPException(404, "Chat not found")
+    delete_chat(chat_id)
     # Also clear RAG session and upload files
     clear_session(chat_id)
     clear_chat_history(chat_id)
@@ -112,7 +121,7 @@ async def api_rename_chat(chat_id: str, req: RenameChatRequest):
 @app.post("/chat/{chat_id}", response_model=ChatResponse)
 async def chat_scoped(chat_id: str, req: ChatRequest):
     if not chat_exists(chat_id):
-        raise HTTPException(404, "Chat not found")
+        _ensure_chat_record(chat_id)
     if not req.message.strip():
         raise HTTPException(400, "Empty message.")
 
