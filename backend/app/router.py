@@ -232,9 +232,16 @@ _ACKNOWLEDGEMENT_REPLIES = {
     "gm": "Good morning! How can I help you today?",
     "good morning": "Good morning! How can I help you today?",
     "good afternoon": "Good afternoon! How can I help you today?",
-    "good evening": "Good evening! How can I help you today?",
     "hi orlixa": "Hello! How can I help you today?",
     "hello orlixa": "Hello! How can I help you today?",
+    "how are you": "I'm doing great, thank you for asking! How can I help you today?",
+    "how r u": "I'm doing great! How can I assist you today?",
+    "how are you doing": "I'm doing well, thank you! Hope you're having a great day. What can I do for you?",
+    "how's it going": "It's going well! How can I help you today?",
+    "how is it going": "Everything is running smoothly. What's on your mind?",
+    "whats up": "Not much, just here and ready to help! What's up with you?",
+    "what's up": "Not much, just here and ready to help! What's up with you?",
+    "sup": "Not much! How can I help you today?",
 }
 _LEAVE_IT_PHRASES = {
     "leave it",
