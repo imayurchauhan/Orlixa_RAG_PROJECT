@@ -310,7 +310,7 @@ def generate_otp(email: str) -> str:
             """
             msg.attach(MIMEText(body, 'html'))
             
-            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
             server.starttls()
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
             server.send_message(msg)
