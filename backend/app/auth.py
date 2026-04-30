@@ -14,8 +14,9 @@ from fastapi import Depends, Header, HTTPException
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import requests
 
-from app.config import AUTH_SECRET_KEY, GOOGLE_CLIENT_ID, SMTP_EMAIL, SMTP_APP_PASSWORD
+from app.config import AUTH_SECRET_KEY, GOOGLE_CLIENT_ID, SMTP_EMAIL, SMTP_APP_PASSWORD, RESEND_API_KEY
 from app.db import get_conn
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -145,35 +146,22 @@ def create_user(email: str, password: str, full_name: str = "") -> dict:
     
     existing_user = get_user_by_email(normalized_email)
     if existing_user:
-        # sqlite3.Row does not have .get(), check via keys or direct access
-        is_verified = existing_user["is_verified"] if "is_verified" in existing_user.keys() else 0
-        if is_verified:
-            raise HTTPException(status_code=409, detail="Email already registered")
-        else:
-            conn = get_conn()
-            conn.execute(
-                "UPDATE users SET password_hash=?, full_name=? WHERE id=?",
-                (hash_password(password), full_name.strip(), existing_user["id"]),
-            )
-            conn.commit()
-            conn.close()
-            generate_otp(normalized_email)
-            return {"requires_otp": True, "email": normalized_email}
+        raise HTTPException(status_code=409, detail="Email already registered")
 
     conn = get_conn()
     user_id = uuid.uuid4().hex
     conn.execute(
         """
         INSERT INTO users (id, email, password_hash, full_name, auth_provider, is_verified)
-        VALUES (?, ?, ?, ?, ?, 0)
+        VALUES (?, ?, ?, ?, ?, 1)
         """,
         (user_id, normalized_email, hash_password(password), full_name.strip(), "email"),
     )
     conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
     conn.close()
     
-    generate_otp(normalized_email)
-    return {"requires_otp": True, "email": normalized_email}
+    return serialize_user(row)
 
 
 def authenticate_user(email: str, password: str) -> dict:
@@ -182,10 +170,14 @@ def authenticate_user(email: str, password: str) -> dict:
     if row is None or not verify_password(password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Automatically verify legacy accounts that might be unverified
     is_verified = row["is_verified"] if "is_verified" in row.keys() else 0
     if not is_verified:
-        generate_otp(normalized_email)
-        return {"requires_otp": True, "email": normalized_email}
+        conn = get_conn()
+        conn.execute("UPDATE users SET is_verified = 1 WHERE id=?", (row["id"],))
+        conn.commit()
+        row = conn.execute("SELECT * FROM users WHERE id=?", (row["id"],)).fetchone()
+        conn.close()
         
     return serialize_user(row)
 
@@ -293,21 +285,47 @@ def generate_otp(email: str) -> str:
     conn.commit()
     conn.close()
 
-    if SMTP_EMAIL and SMTP_APP_PASSWORD:
+    body = f"""
+    <html>
+      <body>
+        <h2>Welcome to Orlixa!</h2>
+        <p>Your OTP verification code is: <strong style="font-size: 24px; color: #4F46E5;">{otp_code}</strong></p>
+        <p>This code will expire in 10 minutes.</p>
+      </body>
+    </html>
+    """
+
+    if RESEND_API_KEY:
+        try:
+            # We use onboarding@resend.dev as it works instantly without a verified domain
+            # (Note: free Resend tier with onboarding email only allows sending to the email that registered the Resend account)
+            headers = {
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "from": "Orlixa <onboarding@resend.dev>",
+                "to": [normalized_email],
+                "subject": "Your Orlixa Verification Code",
+                "html": body
+            }
+            resp = requests.post("https://api.resend.com/emails", json=data, headers=headers, timeout=5)
+            
+            if resp.status_code in (200, 201):
+                print(f"\n[OTP] Sent email via Resend to {normalized_email}\n")
+            else:
+                print(f"\n[OTP RESEND ERROR] {resp.status_code} - {resp.text}\n")
+                print(f"\n[OTP] Fallback logging Code for {normalized_email}: {otp_code}\n")
+        except Exception as e:
+            print(f"\n[OTP RESEND EXCEPTION] {str(e)}\n")
+            print(f"\n[OTP] Fallback logging Code for {normalized_email}: {otp_code}\n")
+
+    elif SMTP_EMAIL and SMTP_APP_PASSWORD:
         try:
             msg = MIMEMultipart()
             msg['From'] = f"Orlixa <{SMTP_EMAIL}>"
             msg['To'] = normalized_email
             msg['Subject'] = "Your Orlixa Verification Code"
-            body = f"""
-            <html>
-              <body>
-                <h2>Welcome to Orlixa!</h2>
-                <p>Your OTP verification code is: <strong style="font-size: 24px; color: #4F46E5;">{otp_code}</strong></p>
-                <p>This code will expire in 10 minutes.</p>
-              </body>
-            </html>
-            """
             msg.attach(MIMEText(body, 'html'))
             
             server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
@@ -320,7 +338,7 @@ def generate_otp(email: str) -> str:
             print(f"\n[OTP EMAIL ERROR] {str(e)}\n")
             print(f"\n[OTP] Fallback logging Code for {normalized_email}: {otp_code}\n")
     else:
-        print(f"\n[OTP] No SMTP configured. Code for {normalized_email}: {otp_code}\n")
+        print(f"\n[OTP] No SMTP/Resend configured. Code for {normalized_email}: {otp_code}\n")
         
     return otp_code
 

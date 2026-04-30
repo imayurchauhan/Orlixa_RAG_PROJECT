@@ -113,29 +113,16 @@ class SetChatTemplateRequest(BaseModel):
 @app.post("/auth/register", status_code=201)
 async def api_register(req: RegisterRequest):
     result = create_user(req.email, req.password, req.full_name or "")
-    if result.get("requires_otp"):
-        return result
     return build_auth_response(result)
 
 
 @app.post("/auth/login")
 async def api_login(req: LoginRequest):
     result = authenticate_user(req.email, req.password)
-    if result.get("requires_otp"):
-        return result
     return build_auth_response(result)
 
 
-@app.post("/auth/otp/request")
-async def api_otp_request(req: OtpRequest):
-    generate_otp(req.email)
-    return {"message": "OTP sent successfully"}
 
-
-@app.post("/auth/otp/verify")
-async def api_otp_verify(req: OtpVerifyRequest):
-    user = verify_otp(req.email, req.otp_code)
-    return build_auth_response(user)
 
 
 @app.get("/auth/me")

@@ -9,6 +9,7 @@ AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "change-this-secret-in-production
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
 SMTP_APP_PASSWORD = os.getenv("SMTP_APP_PASSWORD", "")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "data" / "uploads"
 VECTOR_DIR = BASE_DIR / "vectorstore"

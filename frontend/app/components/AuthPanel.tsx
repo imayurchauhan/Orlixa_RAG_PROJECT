@@ -6,8 +6,6 @@ import {
   AuthUser,
   loginWithEmail,
   registerWithEmail,
-  requestOtp,
-  verifyOtp,
 } from "@/lib/api";
 import ThemeToggle from "./ThemeToggle";
 
@@ -58,26 +56,22 @@ export default function AuthPanel({
 }: {
   onAuthenticated: (user: AuthUser) => void;
 }) {
-  const [mode, setMode] = useState<"login" | "signup" | "otp">("login");
-  const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const handleModeChange = (newMode: "login" | "signup" | "otp") => {
+  const handleModeChange = (newMode: "login" | "signup") => {
     setIsTransitioning(true);
     setTimeout(() => {
       setMode(newMode);
-      setOtpStep("request");
       setError("");
       setFullName("");
       setEmail("");
       setPassword("");
-      setOtpCode("");
       setIsTransitioning(false);
     }, 200);
   };
@@ -88,31 +82,13 @@ export default function AuthPanel({
     setError("");
 
     try {
-      if (mode === "otp") {
-        if (otpStep === "request") {
-          await requestOtp(email);
-          setOtpStep("verify");
-        } else {
-          const auth = await verifyOtp(email, otpCode);
-          if (auth.user) onAuthenticated(auth.user);
-        }
-      } else {
-        const auth =
-          mode === "signup"
-            ? await registerWithEmail(email, password, fullName)
-            : await loginWithEmail(email, password);
-            
-        if (auth.requires_otp) {
-          setIsTransitioning(true);
-          setTimeout(() => {
-            setMode("otp");
-            setOtpStep("verify");
-            setError("Please enter the OTP sent to your email to continue.");
-            setIsTransitioning(false);
-          }, 200);
-        } else if (auth.user) {
-          onAuthenticated(auth.user);
-        }
+      const auth =
+        mode === "signup"
+          ? await registerWithEmail(email, password, fullName)
+          : await loginWithEmail(email, password);
+          
+      if (auth.user) {
+        onAuthenticated(auth.user);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
@@ -190,7 +166,7 @@ export default function AuthPanel({
                   Access Portal
                 </p>
                 <h2 className="text-2xl sm:text-3xl font-bold transition-smooth">
-                  {mode === "signup" ? "Create Account" : mode === "otp" ? "Login via OTP" : "Welcome Back"}
+                  {mode === "signup" ? "Create Account" : "Welcome Back"}
                 </h2>
               </div>
               <div className="flex flex-col items-end gap-1">
@@ -201,14 +177,6 @@ export default function AuthPanel({
                   className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors disabled:opacity-50 underline-offset-4 hover:underline"
                 >
                   {mode === "signup" ? "Login" : "Sign Up"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleModeChange(mode === "otp" ? "login" : "otp")}
-                  disabled={isTransitioning}
-                  className="text-[10px] sm:text-xs text-white/40 hover:text-white/60 transition-colors disabled:opacity-50"
-                >
-                  {mode === "otp" ? "Use Password" : "Use OTP"}
                 </button>
               </div>
             </div>
@@ -231,59 +199,39 @@ export default function AuthPanel({
                   </div>
                 )}
 
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-xs sm:text-sm font-medium text-white/60 ml-1">Email Address</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{ICON_EMAIL}</span>
-                      <input
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        type="email"
-                        autoComplete="email"
-                        placeholder="name@example.com"
-                        className="w-full rounded-xl sm:rounded-2xl border border-white/[0.08] bg-black/30 pl-11 pr-4 py-3 sm:py-3.5 text-sm outline-none focus:border-indigo-500/50 focus:bg-black/50 transition-all focus:ring-1 focus:ring-indigo-500/20"
-                        required
-                        disabled={loading || (mode === "otp" && otpStep === "verify")}
-                      />
-                    </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-white/60 ml-1">Email Address</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{ICON_EMAIL}</span>
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@example.com"
+                      className="w-full rounded-xl sm:rounded-2xl border border-white/[0.08] bg-black/30 pl-11 pr-4 py-3 sm:py-3.5 text-sm outline-none focus:border-indigo-500/50 focus:bg-black/50 transition-all focus:ring-1 focus:ring-indigo-500/20"
+                      required
+                      disabled={loading}
+                    />
                   </div>
+                </div>
 
-                {mode !== "otp" ? (
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-xs sm:text-sm font-medium text-white/60 ml-1">Password</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{ICON_LOCK}</span>
-                      <input
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        type="password"
-                        autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                        placeholder="••••••••"
-                        className="w-full rounded-xl sm:rounded-2xl border border-white/[0.08] bg-black/30 pl-11 pr-4 py-3 sm:py-3.5 text-sm outline-none focus:border-indigo-500/50 focus:bg-black/50 transition-all focus:ring-1 focus:ring-indigo-500/20"
-                        required
-                        disabled={loading}
-                      />
-                    </div>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-white/60 ml-1">Password</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{ICON_LOCK}</span>
+                    <input
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type="password"
+                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl sm:rounded-2xl border border-white/[0.08] bg-black/30 pl-11 pr-4 py-3 sm:py-3.5 text-sm outline-none focus:border-indigo-500/50 focus:bg-black/50 transition-all focus:ring-1 focus:ring-indigo-500/20"
+                      required
+                      disabled={loading}
+                    />
                   </div>
-                ) : (
-                  otpStep === "verify" && (
-                    <div className="space-y-1.5 sm:space-y-2 animate-slide-in-bottom">
-                      <label className="text-xs sm:text-sm font-medium text-white/60 ml-1">OTP Code</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{ICON_SHIELD}</span>
-                        <input
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value)}
-                          placeholder="000000"
-                          maxLength={6}
-                          className="w-full rounded-xl sm:rounded-2xl border border-white/[0.08] bg-black/30 pl-11 pr-4 py-3 sm:py-3.5 text-sm outline-none focus:border-indigo-500/50 focus:bg-black/50 transition-all focus:ring-1 focus:ring-indigo-500/20 tracking-[0.5em] font-mono text-center"
-                          required
-                          disabled={loading}
-                        />
-                      </div>
-                    </div>
-                  )
-                )}
+                </div>
 
                 {error && (
                   <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs sm:text-sm text-red-400 animate-slide-in-bottom flex items-center gap-2">
@@ -300,10 +248,10 @@ export default function AuthPanel({
                    {loading ? (
                     <div className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      <span>{mode === "otp" && otpStep === "request" ? "Sending OTP..." : "Authenticating..."}</span>
+                      <span>Authenticating...</span>
                     </div>
                   ) : (
-                    mode === "signup" ? "Create Account" : mode === "otp" ? (otpStep === "request" ? "Send OTP" : "Verify & Sign In") : "Sign In"
+                    mode === "signup" ? "Create Account" : "Sign In"
                   )}
                 </button>
 
