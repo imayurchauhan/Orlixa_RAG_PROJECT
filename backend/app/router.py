@@ -34,6 +34,7 @@ _LIVE_QUERY_TERMS = (
     "winner",
     "who won",
     "match update",
+    "match",
     "weather",
     "stock",
     "stocks",
@@ -41,9 +42,17 @@ _LIVE_QUERY_TERMS = (
     "prices",
     "breaking news",
     "news update",
+    "news",
+    "update",
     "recent",
     "this week",
     "this month",
+    "ipl",
+    "bitcoin",
+    "gold price",
+    "election",
+    "crypto",
+    "trending",
 )
 _ACKNOWLEDGEMENT_REPLIES = {
     "ok": "Okay.",
@@ -114,23 +123,19 @@ _IDENTITY_PHRASES = {
 }
 
 # Hindi/Hinglish Common Knowledge Base
+# Keys are specific Hindi/Hinglish trigger phrases only.
+# English queries (e.g. "PM of India") are handled by the LLM — no hardcoding.
 _HINDI_KNOWLEDGE_BASE = {
-    # Indian President & Father of Nation
-    ("rastrapati", "droupadi murmu"): "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
-    ("rashtrapita", "gandhi"): "Bharat ke Rashtrapita (Father of the Nation) Mahatma Gandhi hain. Unhe Bapu bhi kehte hain.",
-    ("bapu", "gandhi"): "Bapu (Father) Mahatma Gandhi the Rashtrapita (Father of the Nation) of India.",
-    
-    # Indian Prime Minister
-    ("pradhan mantri", "narendra modi"): "Bharat ke vartaman Pradhan Mantri (Prime Minister) Narendra Modi hain.",
-    ("pm", "narendra modi"): "Bharat ke Prime Minister Narendra Modi hain.",
-    
-    # Other common Indian facts
-    ("bharat ki rajdhani", "delhi"): "Bharat ki Rajdhani (Capital) New Delhi hai.",
-    ("capital", "india"): "The capital of India is New Delhi.",
-    ("rashtra gaan", "jana gana mana"): "Bharat ka Rashtra Gaan (National Anthem) 'Jana Gana Mana' hai.",
-    ("national anthem", "india"): "The National Anthem of India is 'Jana Gana Mana' composed by Rabindranath Tagore.",
-    ("rashtra bhasha", "hindi"): "Bharat ki Rashtra Bhasha (National Language) Hindi hai.",
-    ("national language", "india"): "The national language of India is Hindi.",
+    "rastrapati": "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
+    "rashtrapati": "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
+    "rashtrapita": "Bharat ke Rashtrapita (Father of the Nation) Mahatma Gandhi hain. Unhe Bapu bhi kehte hain.",
+    "bapu kaun": "Bapu (Father) Mahatma Gandhi the Rashtrapita (Father of the Nation) of India.",
+    "pradhan mantri": "Bharat ke vartaman Pradhan Mantri (Prime Minister) Narendra Modi hain.",
+    "bharat ki rajdhani": "Bharat ki Rajdhani (Capital) New Delhi hai.",
+    "bharat ka capital": "Bharat ki Rajdhani (Capital) New Delhi hai.",
+    "rashtra gaan": "Bharat ka Rashtra Gaan (National Anthem) 'Jana Gana Mana' hai.",
+    "rashtra geet": "Bharat ka Rashtra Geet (National Song) 'Vande Mataram' hai.",
+    "rashtra bhasha": "Bharat ki Rashtra Bhasha (National Language) Hindi hai.",
 }
 
 # Clarification detection keywords
@@ -170,10 +175,22 @@ def _is_uncertain(answer: str) -> bool:
 def _is_live_or_time_sensitive(question: str) -> bool:
     """Return True if either the original OR refined question looks time-sensitive."""
     lowered = question.lower()
+    
+    # Ignore common casual conversational phrases that might contain "today" or "now"
+    casual_phrases = ["how are you", "your day", "what are you doing", "who are you", "what is your name", "tell me about yourself", "tell me about your"]
+    if any(phrase in lowered for phrase in casual_phrases):
+        return False
+        
     # Also detect common misspellings of 'yesterday'
     import re
     if re.search(r"yest[a-z]*day", lowered):
         return True
+        
+    # Exact word match for 'now' and 'today' to avoid partial matches
+    words = lowered.split()
+    if "today" in words or "now" in words or "current" in words or "latest" in words:
+        return True
+        
     return any(term in lowered for term in _LIVE_QUERY_TERMS)
 
 def _is_non_reusable_cached_answer(answer: str) -> bool:
@@ -195,9 +212,9 @@ def _get_conversational_reply(question: str, history: str = ""):
         if phrase in normalized:
             return {"answer": list(_IDENTITY_RESPONSES)[0], "source": "system"}
     
-    # Check Hindi/Hinglish knowledge base
-    for (key1, key2), answer in _HINDI_KNOWLEDGE_BASE.items():
-        if key1 in normalized or key2 in normalized:
+    # Check Hindi/Hinglish knowledge base (match on specific trigger phrase)
+    for trigger, answer in _HINDI_KNOWLEDGE_BASE.items():
+        if trigger in normalized:
             return {"answer": answer, "source": "knowledge"}
     
     # Check for clarification intent (e.g., "nahi, mujhe X janna hai" = "No, I want to know X")
@@ -206,8 +223,8 @@ def _get_conversational_reply(question: str, history: str = ""):
     if has_negation and history:
         # User is correcting/clarifying with a negation like "nahi" (no)
         # Look for any Hindi knowledge key in the current question
-        for (key1, key2), answer in _HINDI_KNOWLEDGE_BASE.items():
-            if key1 in normalized:
+        for trigger, answer in _HINDI_KNOWLEDGE_BASE.items():
+            if trigger in normalized:
                 return {"answer": answer, "source": "knowledge"}
     
     return None
@@ -249,10 +266,41 @@ def _try_llm(question: str, history: str, images: list = None, session_id: str =
         return None
     return {"answer": answer, "source": "llm"}
 
+def _extract_source_urls(context: str) -> list:
+    """Extract source URLs from web search context for citation."""
+    import re
+    urls = re.findall(r'\[Source:\s*(https?://[^\]]+)\]', context)
+    if not urls:
+        # Fallback: extract URLs from snippet format "Title (URL): Body"
+        urls = re.findall(r'\((https?://[^\)]+)\)', context)
+    # Deduplicate while preserving order
+    seen = set()
+    unique = []
+    for u in urls:
+        if u not in seen:
+            seen.add(u)
+            unique.append(u)
+    return unique[:5]
+
+def _boost_query_for_india(query: str) -> str:
+    """Append 'India' to queries containing India-relevant keywords for better results."""
+    india_keywords = [
+        "ipl", "cricket", "gold price", "silver price",
+        "weather", "news", "match", "score", "nifty",
+        "sensex", "rupee", "petrol price", "diesel price",
+    ]
+    q = query.lower()
+    if any(k in q for k in india_keywords):
+        if "india" not in q:
+            return query + " India"
+    return query
+
 def _try_web(question: str, history: str, images: list = None, original_question: str = "", session_id: str = None):
     """Step 3: Web search fallback."""
     # Use the refined question for search (cleaner), but fall back to original if empty
     search_q = question if question.strip() else (original_question or question)
+    # Boost query for Indian relevance
+    search_q = _boost_query_for_india(search_q)
     context = web_search_tool.invoke({"query": search_q})
     if not context:
         return None
@@ -260,6 +308,15 @@ def _try_web(question: str, history: str, images: list = None, original_question
     answer = generate_answer(context, question, "web", history, images=images, template=template)
     if not answer or _is_uncertain(answer):
         return None
+
+    # Append source citations to the answer
+    source_urls = _extract_source_urls(context)
+    if source_urls:
+        citation_block = "\n\n**Sources:**"
+        for i, url in enumerate(source_urls, 1):
+            citation_block += f"\n{i}. {url}"
+        answer += citation_block
+
     return {"answer": answer, "source": "web"}
 
 def route_query(session_id: str, question: str) -> dict:
@@ -294,11 +351,15 @@ def route_query(session_id: str, question: str) -> dict:
     # Step 1: Document retrieval
     # Only retrieve docs if they exist, AND the user isn't explicitly asking about a picture/image when we have images.
     if has_documents(session_id) and not (is_image_query and images):
+        print(f"TRYING DOCUMENT RETRIEVAL for session: {session_id}")
         result = _try_document(session_id, question, history, images=images)
+        if result: print(f"DOCUMENT MATCH FOUND")
 
     if not result and images:
         # Images present but no docs (or we skipped docs) — try vision LLM
+        print(f"TRYING VISION LLM for session: {session_id}")
         result = _try_llm(question, history, images=images, session_id=session_id)
+        if result: print(f"VISION ANSWER GENERATED")
 
     # Step 2: For live/time-sensitive queries, go straight to web search (skip LLM hallucination)
     if not result and is_live:
@@ -307,18 +368,22 @@ def route_query(session_id: str, question: str) -> dict:
 
     # Step 3: LLM direct answer for general knowledge
     if not result:
+        print(f"TRYING LLM DIRECT ANSWER for query: {question}")
         result = _try_llm(question, history, session_id=session_id)
 
     # Step 4: Web fallback if LLM was uncertain
     if not result:
+        print(f"LLM UNCERTAIN or NO ANSWER -> Falling back to web search")
         result = _try_web(question, history, original_question=original_question, session_id=session_id)
 
     # Final fallback
     if not result:
+        print(f"ALL CHANNELS FAILED -> Returning final fallback answer")
         result = {"answer": _FINAL_FALLBACK_ANSWER, "source": "web"}
 
     print(f"SOURCE USED: {result['source']}")
     if use_answer_cache and not _is_non_reusable_cached_answer(result["answer"]):
+        print(f"CACHING ANSWER for future use")
         store_cache(session_id, original_question, result["answer"], result["source"], history)
     add_history(session_id, original_question, result["answer"])
 

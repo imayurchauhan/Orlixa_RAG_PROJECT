@@ -1,4 +1,9 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+let API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Automatically use the network IP if the app is accessed from another device on the local network
+if (!process.env.NEXT_PUBLIC_API_URL && typeof window !== "undefined") {
+  API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+}
 const AUTH_TOKEN_KEY = "orlixa_auth_token";
 
 export interface Chat {
@@ -42,9 +47,11 @@ export interface AuthUser {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  user: AuthUser;
+  access_token?: string;
+  token_type?: string;
+  user?: AuthUser;
+  requires_otp?: boolean;
+  email?: string;
 }
 
 export class ApiError extends Error {
@@ -106,7 +113,9 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<Response>
 }
 
 function storeAuth(response: AuthResponse): AuthResponse {
-  setStoredAuthToken(response.access_token);
+  if (response.access_token) {
+    setStoredAuthToken(response.access_token);
+  }
   return response;
 }
 
@@ -208,12 +217,14 @@ export async function clearChatMessages(chatId: string): Promise<{ status: strin
 
 export async function sendMessageToChat(
   chatId: string,
-  message: string
+  message: string,
+  signal?: AbortSignal
 ): Promise<{ answer: string; source: string }> {
   const res = await apiFetch(`/chat/${encodeURIComponent(chatId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message }),
+    signal,
   });
   return res.json();
 }

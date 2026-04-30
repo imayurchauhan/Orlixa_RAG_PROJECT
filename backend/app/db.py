@@ -21,6 +21,7 @@ def init_db():
             full_name TEXT,
             avatar_url TEXT,
             auth_provider TEXT NOT NULL DEFAULT 'email',
+            is_verified BOOLEAN DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -60,6 +61,10 @@ def init_db():
         conn.execute("ALTER TABLE chats ADD COLUMN user_id TEXT")
     if "template_id" not in chat_columns:
         conn.execute("ALTER TABLE chats ADD COLUMN template_id TEXT")
+
+    user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+    if "is_verified" not in user_columns:
+        conn.execute("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0")
 
     user_indexes = {
         row["name"] for row in conn.execute(

@@ -94,14 +94,25 @@ export default function AuthPanel({
           setOtpStep("verify");
         } else {
           const auth = await verifyOtp(email, otpCode);
-          onAuthenticated(auth.user);
+          if (auth.user) onAuthenticated(auth.user);
         }
       } else {
         const auth =
           mode === "signup"
             ? await registerWithEmail(email, password, fullName)
             : await loginWithEmail(email, password);
-        onAuthenticated(auth.user);
+            
+        if (auth.requires_otp) {
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setMode("otp");
+            setOtpStep("verify");
+            setError("Please enter the OTP sent to your email to continue.");
+            setIsTransitioning(false);
+          }, 200);
+        } else if (auth.user) {
+          onAuthenticated(auth.user);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");

@@ -319,7 +319,7 @@ html.light .bg-mesh {
 }
 
 .animate-slide-in-bottom {
-  animation: slide-in-from-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slide-in-from-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-slide-out-bottom {

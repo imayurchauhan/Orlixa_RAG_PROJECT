@@ -112,14 +112,18 @@ class SetChatTemplateRequest(BaseModel):
 
 @app.post("/auth/register", status_code=201)
 async def api_register(req: RegisterRequest):
-    user = create_user(req.email, req.password, req.full_name or "")
-    return build_auth_response(user)
+    result = create_user(req.email, req.password, req.full_name or "")
+    if result.get("requires_otp"):
+        return result
+    return build_auth_response(result)
 
 
 @app.post("/auth/login")
 async def api_login(req: LoginRequest):
-    user = authenticate_user(req.email, req.password)
-    return build_auth_response(user)
+    result = authenticate_user(req.email, req.password)
+    if result.get("requires_otp"):
+        return result
+    return build_auth_response(result)
 
 
 @app.post("/auth/otp/request")
@@ -243,6 +247,13 @@ async def chat_scoped(chat_id: str, req: ChatRequest, current_user: dict = Depen
         )
     except asyncio.TimeoutError:
         raise HTTPException(504, "Request timed out.")
+    except Exception as e:
+        print(f"ERROR IN ROUTE_QUERY: {str(e)}")
+        # Return a meaningful error to the UI
+        return ChatResponse(
+            answer=f"I encountered an error while processing your request: {str(e)}. Please check your configuration or try again.",
+            source="system"
+        )
 
     # Persist assistant response
     add_message(chat_id, "assistant", result["answer"], result.get("source"))

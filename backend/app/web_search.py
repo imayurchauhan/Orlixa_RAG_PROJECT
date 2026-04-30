@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
 from langchain_core.tools import tool
+from app.config import SERPER_API_KEY, TAVILY_API_KEY
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -62,37 +63,155 @@ async def _async_fetch_page(session: aiohttp.ClientSession, url: str) -> str:
             text = "\n".join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
 
             if not text:
-                text = soup.get_text(separator="\n", strip=True)
+                text = soup.get_text(separator=" ", strip=True)
+
+            # Normalize whitespace
+            text = " ".join(text.split())
 
             return f"[Source: {url}]\n{text[:MAX_CHARS_PER_PAGE]}"
     except Exception:
         return ""
 
 async def _fetch_pages_parallel(urls: list) -> list:
+    """Fetch multiple pages in parallel with per-task timeout protection."""
     print("WEB FETCH PARALLEL")
     async with aiohttp.ClientSession() as session:
-        tasks = [_async_fetch_page(session, url) for url in urls]
+        async def _safe_fetch(url: str) -> str:
+            try:
+                return await asyncio.wait_for(
+                    _async_fetch_page(session, url),
+                    timeout=5
+                )
+            except asyncio.TimeoutError:
+                print(f"FETCH TIMEOUT: {url}")
+                return ""
+        tasks = [_safe_fetch(url) for url in urls]
         results = await asyncio.gather(*tasks)
         return [r for r in results if r and len(r) > 100]
 
 
 def _search_ddgs(query: str, max_results: int = 5) -> list:
-    """Run DuckDuckGo search with fallback backends."""
+    """Run DuckDuckGo search with India region and fallback backends."""
     results = []
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=max_results))
+            results = list(ddgs.text(
+                query,
+                region="in-en",
+                safesearch="moderate",
+                max_results=max_results
+            ))
     except Exception:
         pass
 
     if not results:
         try:
             with DDGS() as ddgs:
-                results = list(ddgs.text(query, backend="html", max_results=max_results))
+                results = list(ddgs.text(
+                    query,
+                    backend="html",
+                    region="in-en",
+                    safesearch="moderate",
+                    max_results=max_results
+                ))
         except Exception:
             pass
 
     return results
+
+
+def _search_serper(query: str, max_results: int = 5) -> list:
+    """Google India search using Serper.dev API. Returns empty if no API key."""
+    if not SERPER_API_KEY:
+        return []
+    try:
+        response = requests.post(
+            "https://google.serper.dev/search",
+            headers={
+                "X-API-KEY": SERPER_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={"q": query, "gl": "in", "hl": "en"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        print(f"SERPER SEARCH ERROR: {e}")
+        return []
+
+    results = []
+    for item in data.get("organic", []):
+        if len(results) >= max_results:
+            break
+        title = item.get("title", "")
+        href = item.get("link", "")
+        body = item.get("snippet", "")
+        if not title and not body:
+            continue
+        # Normalize keys to match existing format (href/body/title)
+        results.append({"title": title, "body": body, "href": href})
+
+    return results
+
+
+def _search_tavily(query: str, max_results: int = 5) -> list:
+    """Search using Tavily API — optimized for LLM/RAG. Returns empty if no API key."""
+    if not TAVILY_API_KEY:
+        return []
+    try:
+        from tavily import TavilyClient
+        client = TavilyClient(api_key=TAVILY_API_KEY)
+        response = client.search(
+            query=query,
+            search_depth="basic",
+            max_results=max_results,
+            include_answer=False,
+        )
+    except Exception as e:
+        print(f"TAVILY SEARCH ERROR: {e}")
+        return []
+
+    results = []
+    for item in response.get("results", []):
+        if len(results) >= max_results:
+            break
+        title = item.get("title", "")
+        href = item.get("url", "")
+        body = item.get("content", "")
+        if not title and not body:
+            continue
+        # Normalize keys to match existing format (href/body/title)
+        results.append({"title": title, "body": body, "href": href})
+
+    if results:
+        print(f"[TAVILY] Found {len(results)} results")
+    return results
+
+
+# Indian domain ranking boost
+INDIAN_DOMAINS = [
+    ".in",
+    "ndtv.com",
+    "timesofindia",
+    "hindustantimes",
+    "moneycontrol",
+    "cricbuzz",
+    "espncricinfo",
+    "indianexpress",
+    "livemint",
+    "thehindu",
+]
+
+
+def _domain_boost(url: str) -> int:
+    """Give a ranking boost score to Indian domains."""
+    score = 0
+    url_lower = url.lower()
+    for d in INDIAN_DOMAINS:
+        if d in url_lower:
+            score += 2
+    return score
 
 
 def _decode_bing_redirect(url: str) -> str:
@@ -168,21 +287,58 @@ def _search_bing_rss(query: str, max_results: int = 5) -> list:
     return parsed_results
 
 
+def _deduplicate_results(results: list) -> list:
+    """Remove duplicate URLs from search results while preserving order."""
+    unique = {}
+    for r in results:
+        url = r.get("href", "")
+        if url and url not in unique:
+            unique[url] = r
+    return list(unique.values())
+
+
 def _search_web(query: str, max_results: int = 5) -> list:
+    print(f"[SEARCH] Searching query: {query}")
+    print(f"[SEARCH] Using India region search")
+
     for candidate in _query_variants(query):
-        results = _search_ddgs(candidate, max_results=max_results)
-        if results:
-            return results
+        # Priority 1: Serper (Google India) — best quality
+        if SERPER_API_KEY:
+            try:
+                results = _search_serper(candidate, max_results=max_results)
+                if results:
+                    results = _deduplicate_results(results)
+                    results.sort(key=lambda x: _domain_boost(x.get("href", "")), reverse=True)
+                    print(f"[SEARCH] Serper returned {len(results)} results")
+                    return results[:max_results]
+            except Exception:
+                pass
+            print(f"[SEARCH] Serper failed for: {candidate}")
 
-        print(f"DDGS SEARCH FAILED FOR: {candidate}; FALLING BACK TO BING RSS")
-        results = _search_bing_rss(candidate, max_results=max_results)
-        if results:
-            return results
+        # Priority 2: Tavily — LLM-optimized search
+        if TAVILY_API_KEY:
+            try:
+                results = _search_tavily(candidate, max_results=max_results)
+                if results:
+                    results = _deduplicate_results(results)
+                    results.sort(key=lambda x: _domain_boost(x.get("href", "")), reverse=True)
+                    print(f"[SEARCH] Tavily returned {len(results)} results")
+                    return results[:max_results]
+            except Exception:
+                pass
+            print(f"[SEARCH] Tavily failed for: {candidate}")
 
-        print(f"BING RSS FAILED FOR: {candidate}; FALLING BACK TO BING HTML")
-        results = _search_bing_html(candidate, max_results=max_results)
-        if results:
-            return results
+        # Priority 3: DuckDuckGo (India region) — free fallback
+        try:
+            results = _search_ddgs(candidate, max_results=max_results)
+            if results:
+                results = _deduplicate_results(results)
+                results.sort(key=lambda x: _domain_boost(x.get("href", "")), reverse=True)
+                print(f"[SEARCH] DDGS returned {len(results)} results")
+                return results[:max_results]
+        except Exception:
+            pass
+        print(f"[SEARCH] DDGS failed for: {candidate}")
 
     return []
 
@@ -243,6 +399,17 @@ def _query_variants(query: str) -> list:
     return variants
 
 
+def _score_page(query: str, text: str) -> int:
+    """Score page relevance by counting query keyword matches in text."""
+    score = 0
+    query_words = query.lower().split()
+    text_lower = text.lower()
+    for word in query_words:
+        if len(word) > 2 and word in text_lower:
+            score += 1
+    return score
+
+
 @tool
 def web_search_tool(query: str) -> str:
     """Search the web for live information."""
@@ -273,15 +440,15 @@ def web_search_tool(query: str) -> str:
 
     # Collect snippet text from search result bodies
     snippets = []
-    for r in results:
+    for i, r in enumerate(results, 1):
         body = r.get("body", "")
         title = r.get("title", "")
         href = r.get("href", "")
         if body:
             if href:
-                snippets.append(f"{title} ({href}): {body}")
+                snippets.append(f"Source {i}: {title} ({href})\n{body}")
             else:
-                snippets.append(f"{title}: {body}")
+                snippets.append(f"Source {i}: {title}\n{body}")
 
     # Fetch full page content from top URLs
     urls_to_fetch = []
@@ -294,11 +461,20 @@ def web_search_tool(query: str) -> str:
             
     fetched_pages = asyncio.run(_fetch_pages_parallel(urls_to_fetch))
 
-    # Combine: snippets first, then full page content
+    # Rank fetched pages by relevance to original query
+    if fetched_pages and len(fetched_pages) > 1:
+        fetched_pages.sort(key=lambda page_text: _score_page(query, page_text), reverse=True)
+        fetched_pages = fetched_pages[:3]  # Keep top 3 ranked pages
+        print(f"PAGES RANKED BY RELEVANCE: {len(fetched_pages)} pages kept")
+
+    # Combine: numbered snippets first, then ranked page content
     all_parts = []
     if snippets:
         all_parts.append("--- Search Snippets ---\n" + "\n\n".join(snippets))
     if fetched_pages:
-        all_parts.append("--- Detailed Content ---\n" + "\n\n".join(fetched_pages))
+        detailed_parts = []
+        for i, page in enumerate(fetched_pages, 1):
+            detailed_parts.append(f"--- Detailed Source {i} ---\n{page}")
+        all_parts.append("\n\n".join(detailed_parts))
 
     return "\n\n".join(all_parts) if all_parts else ""

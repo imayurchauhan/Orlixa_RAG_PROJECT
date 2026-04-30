@@ -11,8 +11,11 @@ import datetime
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-from app.config import AUTH_SECRET_KEY, GOOGLE_CLIENT_ID
+from app.config import AUTH_SECRET_KEY, GOOGLE_CLIENT_ID, SMTP_EMAIL, SMTP_APP_PASSWORD
 from app.db import get_conn
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -139,22 +142,38 @@ def create_user(email: str, password: str, full_name: str = "") -> dict:
         raise HTTPException(status_code=400, detail="Invalid email address")
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-    if get_user_by_email(normalized_email):
-        raise HTTPException(status_code=409, detail="Email already registered")
+    
+    existing_user = get_user_by_email(normalized_email)
+    if existing_user:
+        # sqlite3.Row does not have .get(), check via keys or direct access
+        is_verified = existing_user["is_verified"] if "is_verified" in existing_user.keys() else 0
+        if is_verified:
+            raise HTTPException(status_code=409, detail="Email already registered")
+        else:
+            conn = get_conn()
+            conn.execute(
+                "UPDATE users SET password_hash=?, full_name=? WHERE id=?",
+                (hash_password(password), full_name.strip(), existing_user["id"]),
+            )
+            conn.commit()
+            conn.close()
+            generate_otp(normalized_email)
+            return {"requires_otp": True, "email": normalized_email}
 
     conn = get_conn()
     user_id = uuid.uuid4().hex
     conn.execute(
         """
-        INSERT INTO users (id, email, password_hash, full_name, auth_provider)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO users (id, email, password_hash, full_name, auth_provider, is_verified)
+        VALUES (?, ?, ?, ?, ?, 0)
         """,
         (user_id, normalized_email, hash_password(password), full_name.strip(), "email"),
     )
     conn.commit()
-    row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
     conn.close()
-    return serialize_user(row)
+    
+    generate_otp(normalized_email)
+    return {"requires_otp": True, "email": normalized_email}
 
 
 def authenticate_user(email: str, password: str) -> dict:
@@ -162,6 +181,12 @@ def authenticate_user(email: str, password: str) -> dict:
     row = get_user_by_email(normalized_email)
     if row is None or not verify_password(password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    is_verified = row["is_verified"] if "is_verified" in row.keys() else 0
+    if not is_verified:
+        generate_otp(normalized_email)
+        return {"requires_otp": True, "email": normalized_email}
+        
     return serialize_user(row)
 
 
@@ -268,8 +293,34 @@ def generate_otp(email: str) -> str:
     conn.commit()
     conn.close()
 
-    # In a real app, send this via email. For now, log it.
-    print(f"\n[OTP] Code for {normalized_email}: {otp_code}\n")
+    if SMTP_EMAIL and SMTP_APP_PASSWORD:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"Orlixa <{SMTP_EMAIL}>"
+            msg['To'] = normalized_email
+            msg['Subject'] = "Your Orlixa Verification Code"
+            body = f"""
+            <html>
+              <body>
+                <h2>Welcome to Orlixa!</h2>
+                <p>Your OTP verification code is: <strong style="font-size: 24px; color: #4F46E5;">{otp_code}</strong></p>
+                <p>This code will expire in 10 minutes.</p>
+              </body>
+            </html>
+            """
+            msg.attach(MIMEText(body, 'html'))
+            
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            print(f"\n[OTP] Sent email to {normalized_email}\n")
+        except Exception as e:
+            print(f"\n[OTP EMAIL ERROR] {str(e)}\n")
+            print(f"\n[OTP] Fallback logging Code for {normalized_email}: {otp_code}\n")
+    else:
+        print(f"\n[OTP] No SMTP configured. Code for {normalized_email}: {otp_code}\n")
         
     return otp_code
 
@@ -294,16 +345,19 @@ def verify_otp(email: str, otp_code: str) -> dict:
 
     # Success: Delete OTP and return user
     conn.execute("DELETE FROM user_otps WHERE email=?", (normalized_email,))
-    conn.commit()
 
     # Get or create user
     user_row = conn.execute("SELECT * FROM users WHERE email=?", (normalized_email,)).fetchone()
-    if user_row is None:
+    if user_row:
+        conn.execute("UPDATE users SET is_verified = 1 WHERE email=?", (normalized_email,))
+        conn.commit()
+        user_row = conn.execute("SELECT * FROM users WHERE email=?", (normalized_email,)).fetchone()
+    else:
         user_id = uuid.uuid4().hex
         conn.execute(
             """
-            INSERT INTO users (id, email, full_name, auth_provider)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (id, email, full_name, auth_provider, is_verified)
+            VALUES (?, ?, ?, ?, 1)
             """,
             (user_id, normalized_email, normalized_email.split("@")[0], "otp"),
         )

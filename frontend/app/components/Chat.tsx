@@ -54,10 +54,17 @@ export default function Chat({
   const [loading, setLoading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [displayedText, setDisplayedText] = useState(""); // For typing effect
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
 
   // Load messages whenever chatId changes
   useEffect(() => {
@@ -70,34 +77,9 @@ export default function Chat({
       .catch(() => setMessages([]));
   }, [chatId]);
 
-  // Typing effect for the last assistant message
-  useEffect(() => {
-    const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.role !== "assistant" || loading) {
-      setDisplayedText("");
-      return;
-    }
-
-    const fullText = lastMsg.content;
-    let charIndex = 0;
-    setDisplayedText("");
-
-    const typingSpeed = 5; // milliseconds per character
-    const interval = setInterval(() => {
-      if (charIndex < fullText.length) {
-        setDisplayedText(fullText.slice(0, charIndex + 1));
-        charIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, typingSpeed);
-
-    return () => clearInterval(interval);
-  }, [messages, loading]);
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, displayedText]);
+  }, [messages]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
@@ -153,13 +135,19 @@ export default function Chat({
         if (q) {
           setUploading(false);
           setLoading(true);
+          abortControllerRef.current = new AbortController();
           try {
-            const res = await sendMessageToChat(chatId, q);
+            const res = await sendMessageToChat(chatId, q, abortControllerRef.current.signal);
             setMessages((prev) => [...prev, { role: "assistant", content: res.answer, source: res.source }]);
-          } catch {
-            setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+          } catch (error: any) {
+            if (error.name === "AbortError") {
+              setMessages((prev) => [...prev, { role: "assistant", content: "Chat paused by user." }]);
+            } else {
+              setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+            }
           } finally {
             setLoading(false);
+            abortControllerRef.current = null;
           }
         }
       } catch {
@@ -175,14 +163,20 @@ export default function Chat({
     const userMsg: Message = { role: "user", content: q };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
+    abortControllerRef.current = new AbortController();
     try {
-      const res = await sendMessageToChat(chatId, q);
+      const res = await sendMessageToChat(chatId, q, abortControllerRef.current.signal);
       const assistantMsg: Message = { role: "assistant", content: res.answer, source: res.source };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Chat paused by user." }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+      }
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
       inputRef.current?.focus();
     }
   };
@@ -194,7 +188,6 @@ export default function Chat({
     try {
       await clearChatMessages(chatId);
       setMessages([]);
-      setDisplayedText("");
       inputRef.current?.focus();
     } catch {
       alert("Failed to clear chat. Please try again.");
@@ -215,12 +208,8 @@ export default function Chat({
           </div>
         )}
         {messages.map((msg, i) => {
-          const isLastAssistantMsg = msg.role === "assistant" && i === messages.length - 1;
-          const displayText = isLastAssistantMsg ? displayedText : msg.content;
-          const isTyping = isLastAssistantMsg && displayedText.length < msg.content.length;
-
           return (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-in-bottom`} style={{ animationDelay: `${i * 50}ms` }}>
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-in-bottom`} style={{ animationDelay: `${Math.min(i * 15, 250)}ms` }}>
             {msg.role === "system" ? (
               <div className="w-full flex justify-center px-2">
                 <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.06] animate-scale-in">
@@ -232,9 +221,7 @@ export default function Chat({
                 className={`max-w-[85%] sm:max-w-[80%] px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl text-xs sm:text-sm leading-relaxed transition-all duration-300 animate-in ${
                   msg.role === "user"
                     ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white-force rounded-br-md hover:shadow-lg hover:shadow-indigo-500/20 transform hover:scale-[1.02]"
-                    : `bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm hover:bg-white/[0.08] ${
-                        isTyping ? "shadow-lg shadow-indigo-500/10 border-indigo-500/30" : ""
-                      }`
+                    : "bg-white/[0.06] text-white/90 border border-white/[0.06] rounded-bl-md backdrop-blur-sm hover:bg-white/[0.08]"
                 }`}
               >
                 {msg.files && msg.files.length > 0 && (
@@ -249,10 +236,10 @@ export default function Chat({
                 )}
                 <div className={`markdown-content ${msg.role === "user" ? "user-message-markdown" : ""}`}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {displayText + (isTyping ? " ▊" : "")}
+                    {msg.content}
                   </ReactMarkdown>
                 </div>
-                {msg.source && SOURCE_BADGE[msg.source] && !isTyping && (
+                {msg.source && SOURCE_BADGE[msg.source] && (
                   <span className={`inline-block mt-1.5 sm:mt-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium ${SOURCE_BADGE[msg.source].color} animate-fade-in`}>
                     {SOURCE_BADGE[msg.source].label}
                   </span>
@@ -379,18 +366,31 @@ export default function Chat({
               id="chat-input"
             />
 
-            {/* Send button */}
-            <button
-              onClick={handleSend}
-              disabled={(loading || uploading || !chatId) || (!input.trim() && pendingFiles.length === 0)}
-              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white-force hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95 flex-shrink-0"
-              id="send-button"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
+            {/* Send / Stop button */}
+            {loading ? (
+              <button
+                onClick={handleStop}
+                className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/[0.06] border border-white/[0.08] text-white hover:bg-white/[0.1] hover:text-red-400 transition-all transform hover:scale-110 active:scale-95 flex-shrink-0"
+                id="stop-button"
+                title="Pause/Stop generation"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="sm:w-[18px] sm:h-[18px]">
+                  <rect x="6" y="6" width="12" height="12" rx="2" ry="2" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={(uploading || !chatId) || (!input.trim() && pendingFiles.length === 0)}
+                className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white-force hover:opacity-90 hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed transform hover:scale-110 active:scale-95 flex-shrink-0"
+                id="send-button"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[18px] sm:h-[18px]">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
