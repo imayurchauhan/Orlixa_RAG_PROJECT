@@ -373,13 +373,14 @@ def _query_variants(query: str) -> list:
     keyword_tokens = [token for token in tokens if token.lower() not in _QUERY_STOPWORDS]
     lowered_tokens = {token.lower() for token in keyword_tokens}
 
-    # Detect "yesterday" (and common misspellings like "yeasterday")
-    mentions_yesterday = bool(re.search(r"yest[a-z]*day", query.lower()))
+    # Detect "yesterday" (and common misspellings) or "last/recent/previous match"
+    yesterday_keywords = ["last match", "recent match", "previous match", "yesterday match"]
+    mentions_yesterday = bool(re.search(r"yest[a-z]*day", query.lower())) or any(k in query.lower() for k in yesterday_keywords)
     mentions_today = any(t in lowered_tokens for t in {"today", "live", "current", "now"})
 
     if mentions_yesterday:
         # Replace any yesterday-like token with the actual date
-        keyword_tokens = [t for t in keyword_tokens if not re.match(r"yest[a-z]*day", t.lower())]
+        keyword_tokens = [t for t in keyword_tokens if not (re.match(r"yest[a-z]*day", t.lower()) or t.lower() in ["last", "recent", "previous"])]
         keyword_tokens.append(yesterday_str)
     elif mentions_today and "today" not in lowered_tokens:
         keyword_tokens.append(today_str)
@@ -458,6 +459,11 @@ def web_search_tool(query: str) -> str:
         url = r.get("href", "")
         if url:
             urls_to_fetch.append(url)
+            
+    # Add a short delay to allow search results to stabilize/simulated loading wait
+    print(f"WAITING 1.5s FOR WEB CONTENT TO LOAD...")
+    import time
+    time.sleep(1.5)
             
     fetched_pages = asyncio.run(_fetch_pages_parallel(urls_to_fetch))
 

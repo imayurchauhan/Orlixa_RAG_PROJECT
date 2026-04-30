@@ -21,38 +21,186 @@ _UNCERTAIN_PHRASES = [
 ]
 _FINAL_FALLBACK_ANSWER = "I could not find a reliable answer. Please try rephrasing your question."
 _LIVE_QUERY_TERMS = (
+
+    # Core Real-Time Indicators
     "live",
+    "now",
+    "right now",
+    "currently",
+    "at the moment",
+    "real time",
+    "real-time",
+    "instant",
+    "ongoing",
+    "happening now",
+
+    # Time-Sensitive Queries
     "today",
     "yesterday",
-    "current",
-    "now",
+    "tomorrow",
     "latest",
+    "recent",
+    "recently",
+    "current",
+    "new",
+    "newest",
+    "just now",
+    "just happened",
+    "last",
+    "previous",
+    "this week",
+    "this month",
+    "this year",
+    "latest update",
+    "latest news",
+    "latest info",
+    "latest information",
+
+    # News Related
+    "news",
+    "breaking news",
+    "headline",
+    "headlines",
+    "news update",
+    "news today",
+    "top news",
+    "world news",
+    "local news",
+    "recent news",
+    "news alert",
+    "trending news",
+
+    # Sports Related
     "score",
     "scores",
-    "result",
+    "live score",
+    "match",
+    "match update",
+    "match result",
     "results",
     "winner",
     "who won",
-    "match update",
-    "match",
+    "won",
+    "final score",
+    "scorecard",
+    "live match",
+    "live cricket",
+    "live football",
+    "live match score",
+    "match status",
+    "match summary",
+    "live commentary",
+
+    # IPL & Cricket Specific
+    "ipl",
+    "ipl score",
+    "ipl match",
+    "ipl result",
+    "ipl live",
+    "cricket score",
+    "cricket live",
+    "t20",
+    "odi",
+    "test match",
+
+    # Weather Related
     "weather",
+    "weather today",
+    "weather now",
+    "temperature",
+    "forecast",
+    "rain",
+    "rainfall",
+    "humidity",
+    "wind speed",
+    "storm",
+    "heatwave",
+    "weather forecast",
+
+    # Financial / Stock Market
     "stock",
     "stocks",
+    "stock price",
+    "share price",
+    "market",
+    "market update",
+    "market news",
+    "stock market",
+    "sensex",
+    "nifty",
+    "nifty50",
+    "banknifty",
     "price",
     "prices",
-    "breaking news",
-    "news update",
-    "news",
-    "update",
-    "recent",
-    "this week",
-    "this month",
-    "ipl",
-    "bitcoin",
-    "gold price",
-    "election",
+    "rate",
+    "rates",
+
+    # Cryptocurrency
     "crypto",
+    "cryptocurrency",
+    "bitcoin",
+    "btc",
+    "ethereum",
+    "eth",
+    "crypto price",
+    "coin price",
+    "token price",
+    "live crypto",
+    "crypto market",
+
+    # Commodity Prices
+    "gold price",
+    "silver price",
+    "petrol price",
+    "diesel price",
+    "fuel price",
+    "oil price",
+    "commodity price",
+
+    # Elections & Politics
+    "election",
+    "election results",
+    "vote result",
+    "poll result",
+    "exit poll",
+    "election update",
+    "vote counting",
+
+    # Technology / Releases
+    "release date",
+    "launch date",
+    "launch today",
+    "new release",
+    "new update",
+    "software update",
+    "version update",
+
+    # Trends / Social Media
     "trending",
+    "trending now",
+    "viral",
+    "what's trending",
+    "top trending",
+    "trend",
+
+    # Events & Alerts
+    "alert",
+    "emergency",
+    "incident",
+    "traffic update",
+    "road condition",
+    "flight status",
+    "train status",
+    "bus status",
+
+    # Generic Update Terms
+    "update",
+    "updates",
+    "status",
+    "latest status",
+    "current status",
+    "live update",
+    "recent update"
 )
 _ACKNOWLEDGEMENT_REPLIES = {
     "ok": "Okay.",
@@ -74,6 +222,12 @@ _ACKNOWLEDGEMENT_REPLIES = {
     "hello": "Hello! How can I help you today?",
     "hey": "Hello! How can I help you today?",
     "heyy": "Hello! How can I help you today?",
+    "hii": "Hello! How can I help you today?",
+    "hiii": "Hello! How can I help you today?",
+    "hiiii": "Hello! How can I help you today?",
+    "heyyy": "Hello! How can I help you today?",
+    "hola": "Hola! How can I help you today?",
+    "yo": "Hello! How can I help you today?",
     "gm": "Good morning! How can I help you today?",
     "good morning": "Good morning! How can I help you today?",
     "good afternoon": "Good afternoon! How can I help you today?",
@@ -105,48 +259,329 @@ _IDENTITY_RESPONSES = {
 }
 
 _IDENTITY_PHRASES = {
+
+    # Basic Identity Questions
     "who are you",
     "what are you",
     "what is your name",
-    "what are you called",
-    "who am i talking to",
-    "what should i call you",
-    "your name",
-    "your identity",
     "what's your name",
+    "who are u",
+    "who r you",
+    "who is this",
     "who's this",
+
+    # Name Related
+    "your name",
+    "tell me your name",
+    "what should i call you",
+    "what are you called",
+    "do you have a name",
+    "name please",
+    "your identity",
+
+    # Introduction Requests
     "introduce yourself",
+    "can you introduce yourself",
     "tell me about yourself",
+    "about yourself",
+    "self introduction",
+    "give introduction",
+
+    # Purpose / Role
     "what do you do",
-    "what's your purpose",
     "what can you do",
+    "what's your purpose",
+    "your purpose",
+    "what is your purpose",
+    "why are you here",
+    "what are you made for",
+    "what is your job",
+
+    # Capability Inquiry
+    "how can you help me",
+    "how do you help",
+    "what help can you provide",
+    "what services do you offer",
+
+    # Conversational Variations
+    "who am i talking to",
+    "who am i chatting with",
+    "who is talking",
+    "who is answering",
+
+    # Hindi Identity Queries
+    "tum kaun ho",
+    "aap kaun ho",
+    "aap kaun hain",
+    "tumhara naam kya hai",
+    "aapka naam kya hai",
+    "tera naam kya hai",
+
+    # Hinglish Variants
+    "tumhara name kya hai",
+    "aapka name kya hai",
+    "apka naam kya hai",
+    "apka name kya hai",
+
+    # Hindi Introduction Requests
+    "apne bare me batao",
+    "apne baare me batao",
+    "apna parichay do",
+    "khud ke baare me batao",
+
+    # Hindi Purpose Queries
+    "tum kya karte ho",
+    "aap kya karte ho",
+    "aap kya kar sakte ho",
+    "tum kya kar sakte ho",
+    "tumhara kaam kya hai",
+
+    # Short / Casual Queries
+    "who u",
+    "name",
+    "id",
+    "identity",
+    "about you",
+
+    # AI-Specific Curiosity
+    "are you ai",
+    "are you human",
+    "are you bot",
+    "are you chatbot",
+    "are you real",
+    "are you robot",
+    "what type of ai are you",
+
+    # Model / System Curiosity
+    "which model are you",
+    "what model are you",
+    "what ai model are you",
+    "which ai are you",
+    "what version are you",
+
+    # Brand / Assistant Identity
+    "who created you",
+    "who made you",
+    "who developed you",
+    "who built you",
+
 }
 
 # Hindi/Hinglish Common Knowledge Base
 # Keys are specific Hindi/Hinglish trigger phrases only.
 # English queries (e.g. "PM of India") are handled by the LLM — no hardcoding.
 _HINDI_KNOWLEDGE_BASE = {
-    "rastrapati": "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
+
+    # President & Prime Minister (Dynamic Info)
     "rashtrapati": "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
-    "rashtrapita": "Bharat ke Rashtrapita (Father of the Nation) Mahatma Gandhi hain. Unhe Bapu bhi kehte hain.",
-    "bapu kaun": "Bapu (Father) Mahatma Gandhi the Rashtrapita (Father of the Nation) of India.",
+    "rastrapati": "Bharat ke vartaman Rashtrapati (President) Droupadi Murmu hain.",
+
     "pradhan mantri": "Bharat ke vartaman Pradhan Mantri (Prime Minister) Narendra Modi hain.",
+    "pm kaun hai": "Bharat ke vartaman Pradhan Mantri (Prime Minister) Narendra Modi hain.",
+
+    # National Leaders
+    "rashtrapita": "Bharat ke Rashtrapita (Father of the Nation) Mahatma Gandhi hain.",
+    "bapu kaun": "Bapu Mahatma Gandhi ko kaha jata hai.",
+    "gandhi ji kaun": "Mahatma Gandhi Bharat ke Rashtrapita (Father of the Nation) the.",
+
+    # Capital
     "bharat ki rajdhani": "Bharat ki Rajdhani (Capital) New Delhi hai.",
     "bharat ka capital": "Bharat ki Rajdhani (Capital) New Delhi hai.",
+
+    # National Symbols
     "rashtra gaan": "Bharat ka Rashtra Gaan (National Anthem) 'Jana Gana Mana' hai.",
+    "national anthem india": "India ka National Anthem 'Jana Gana Mana' hai.",
+
     "rashtra geet": "Bharat ka Rashtra Geet (National Song) 'Vande Mataram' hai.",
-    "rashtra bhasha": "Bharat ki Rashtra Bhasha (National Language) Hindi hai.",
+    "national song india": "India ka National Song 'Vande Mataram' hai.",
+
+    "rashtriya pakshi": "Bharat ka Rashtriya Pakshi (National Bird) Mor (Peacock) hai.",
+    "national bird india": "India ka National Bird Mor (Peacock) hai.",
+
+    "rashtriya janwar": "Bharat ka Rashtriya Janwar (National Animal) Bagh (Tiger) hai.",
+    "national animal india": "India ka National Animal Bagh (Tiger) hai.",
+
+    "rashtriya phool": "Bharat ka Rashtriya Phool (National Flower) Kamal (Lotus) hai.",
+    "national flower india": "India ka National Flower Kamal (Lotus) hai.",
+
+    "rashtriya fal": "Bharat ka Rashtriya Fal (National Fruit) Aam (Mango) hai.",
+    "national fruit india": "India ka National Fruit Aam (Mango) hai.",
+
+    "rashtriya vriksh": "Bharat ka Rashtriya Vriksh (National Tree) Bargad (Banyan Tree) hai.",
+    "national tree india": "India ka National Tree Bargad hai.",
+
+    # Languages
+    "rashtra bhasha": "Bharat ki koi ek Rashtra Bhasha nahi hai, lekin Hindi aur English adhikarik bhashayein hain.",
+    "national language india": "India ki koi official national language nahi hai.",
+
+    # Currency
+    "bharat ki mudra": "Bharat ki Mudra (Currency) Rupee (₹) hai.",
+    "currency india": "India ki Currency Rupee (₹) hai.",
+
+    # Independence & Republic Day
+    "independence day": "Bharat ka Independence Day 15 August ko manaya jata hai.",
+    "azadi kab mili": "Bharat ko 15 August 1947 ko azadi mili.",
+
+    "republic day": "Bharat ka Republic Day 26 January ko manaya jata hai.",
+    "ganatantra diwas": "Ganatantra Diwas 26 January ko manaya jata hai.",
+
+    # States & Geography
+    "bharat me kitne rajya": "Bharat me vartaman me 28 rajya (states) hain.",
+    "how many states in india": "India me 28 states hain.",
+
+    "sabse bada rajya": "Bharat ka sabse bada rajya Rajasthan hai (area ke hisab se).",
+    "sabse chota rajya": "Bharat ka sabse chota rajya Goa hai (area ke hisab se).",
+
+    # Population
+    "bharat ki jansankhya": "Bharat duniya ka sabse adhik jansankhya wala desh hai.",
+
+    # Rivers
+    "sabse lambi nadi": "Bharat ki sabse lambi nadi Ganga hai.",
+    "ganga kaha se nikalti hai": "Ganga nadi Gangotri glacier se nikalti hai.",
+
+    # Science Basic
+    "surya kya hai": "Surya ek tara (star) hai.",
+    "chand kya hai": "Chand Prithvi ka ek upgrah (satellite) hai.",
+
+    # Maths Basic
+    "2+2": "2 + 2 = 4",
+    "5+5": "5 + 5 = 10",
+
 }
 
 # Clarification detection keywords
 _CLARIFICATION_KEYWORDS = {
-    "nahi", "no", "not", "bilkul nahi", "absolutely not",
-    "galat", "wrong", "incorrect", "galat tha",
-    "nai", "nahin", "nahi",
-    "pata hai", "means", "matlab",
-    "alag", "different", "doosra",
-    "aur", "and", "also",
-    "haan", "yes", "bilkul",
+
+    # Basic Negation / Correction
+    "no",
+    "not",
+    "nope",
+    "nah",
+    "nahi",
+    "nahin",
+    "nai",
+    "na",
+    "bilkul nahi",
+    "absolutely not",
+    "not correct",
+    "not right",
+    "wrong",
+    "incorrect",
+    "galat",
+    "galat tha",
+    "galat hai",
+    "ye galat hai",
+    "that is wrong",
+
+    # Confirmation / Agreement
+    "yes",
+    "haan",
+    "han",
+    "haa",
+    "hmm",
+    "bilkul",
+    "bilkul sahi",
+    "correct",
+    "right",
+    "exactly",
+    "true",
+    "sahi",
+    "sahi hai",
+
+    # Clarification Words
+    "means",
+    "meaning",
+    "matlab",
+    "iska matlab",
+    "pata hai",
+    "i mean",
+    "what i mean",
+    "let me clarify",
+    "to clarify",
+    "clarify",
+
+    # Modification / Change Requests
+    "change",
+    "modify",
+    "update",
+    "edit",
+    "revise",
+    "replace",
+    "correct this",
+    "fix this",
+    "update this",
+    "modify this",
+
+    # Alternative Requests
+    "different",
+    "alag",
+    "doosra",
+    "dusra",
+    "another",
+    "other",
+    "else",
+    "kuch aur",
+    "aur",
+    "and",
+    "also",
+    "instead",
+    "rather",
+
+    # Expansion / Addition
+    "add",
+    "include",
+    "add this",
+    "include this",
+    "also add",
+    "aur add karo",
+    "ye bhi add karo",
+
+    # Re-Explanation Requests
+    "explain again",
+    "repeat",
+    "say again",
+    "dobara",
+    "phir se",
+    "again",
+    "once more",
+    "re explain",
+    "explain clearly",
+
+    # Correction Feedback
+    "you missed",
+    "missing",
+    "not included",
+    "left out",
+    "forgot",
+    "missed this",
+
+    # Refinement Requests
+    "make it better",
+    "improve",
+    "refine",
+    "enhance",
+    "optimize",
+
+    # Direction Changes
+    "no i mean",
+    "not that",
+    "not this",
+    "this one",
+    "that one",
+    "ye nahi",
+    "wo nahi",
+    "ye wala",
+    "wo wala",
+
+    # Tone Adjustments
+    "short",
+    "shorter",
+    "long",
+    "longer",
+    "brief",
+    "detailed",
+    "simple",
+    "simplify",
 }
 
 
@@ -188,6 +623,15 @@ def _is_live_or_time_sensitive(question: str) -> bool:
         
     # Exact word match for 'now' and 'today' to avoid partial matches
     words = lowered.split()
+    if not words:
+        return False
+        
+    # If the query is very short (1-2 words) and doesn't contain a heavy live term, ignore it.
+    if len(words) <= 2 and not any(term in words for term in ["stock", "price", "score", "weather", "crypto", "bitcoin"]):
+        # Special case: 'latest news' or 'today news' should still trigger
+        if not ("news" in words or "latest" in words or "today" in words):
+            return False
+
     if "today" in words or "now" in words or "current" in words or "latest" in words:
         return True
         

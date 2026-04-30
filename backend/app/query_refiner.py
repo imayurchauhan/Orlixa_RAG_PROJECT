@@ -90,6 +90,10 @@ def refine_query(question: str, history: str = "") -> str:
     if not original_question:
         return original_question
 
+    # Skip refinement for very short queries/greetings to avoid hallucinated expansions
+    if len(original_question.split()) <= 1:
+        return original_question
+
     history_context = _refinement_context(history)
     cached_refined_query = get_cached_refined_query(original_question, history_context)
     if cached_refined_query:
