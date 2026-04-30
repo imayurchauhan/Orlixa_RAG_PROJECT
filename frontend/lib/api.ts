@@ -1,8 +1,8 @@
-let API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+let API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-// Automatically use the network IP if the app is accessed from another device on the local network
+// Route client-side requests through the Next.js proxy to bypass network/firewall blocks
 if (!process.env.NEXT_PUBLIC_API_URL && typeof window !== "undefined") {
-  API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+  API_BASE = "/api/proxy";
 }
 const AUTH_TOKEN_KEY = "orlixa_auth_token";
 

@@ -235,7 +235,14 @@ export default function Chat({
                   </div>
                 )}
                 <div className={`markdown-content ${msg.role === "user" ? "user-message-markdown" : ""}`}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ node, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      )
+                    }}
+                  >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
