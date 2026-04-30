@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+import re
 from app.rag import document_pipeline, has_documents
 from app.config import UPLOAD_DIR
 from app.web_search import web_search_tool
@@ -617,7 +618,6 @@ def _is_live_or_time_sensitive(question: str) -> bool:
         return False
         
     # Also detect common misspellings of 'yesterday'
-    import re
     if re.search(r"yest[a-z]*day", lowered):
         return True
         
@@ -640,7 +640,7 @@ def _is_live_or_time_sensitive(question: str) -> bool:
 def _is_non_reusable_cached_answer(answer: str) -> bool:
     return answer.strip() == _FINAL_FALLBACK_ANSWER
 
-def _get_conversational_reply(question: str, history: str = ""):
+def _get_conversational_reply(question: str, history: str = "", images: list = None):
     normalized = " ".join(question.strip().lower().split())
     if not normalized:
         return None
@@ -651,10 +651,21 @@ def _get_conversational_reply(question: str, history: str = ""):
     if normalized in _ACKNOWLEDGEMENT_REPLIES:
         return {"answer": _ACKNOWLEDGEMENT_REPLIES[normalized], "source": "system"}
     
-    # Check for identity queries
-    for phrase in _IDENTITY_PHRASES:
-        if phrase in normalized:
-            return {"answer": list(_IDENTITY_RESPONSES)[0], "source": "system"}
+    # Check for identity queries (e.g., "who are you?")
+    # Skip this if images are present and the user is likely asking about the image (e.g., "who is this?")
+    is_vision_inquiry = images and any(word in normalized for word in [
+        "this", "identify", "personality", "photo", "image", "picture", 
+        "pic", "view", "show", "describe", "see", "look", "who is", "who's"
+    ])
+    
+    if not is_vision_inquiry:
+        for phrase in _IDENTITY_PHRASES:
+            # Use word boundaries for short phrases to avoid matching "id" in "identify"
+            if len(phrase) <= 4:
+                if re.search(rf"\b{re.escape(phrase)}\b", normalized):
+                    return {"answer": list(_IDENTITY_RESPONSES)[0], "source": "system"}
+            elif phrase in normalized:
+                return {"answer": list(_IDENTITY_RESPONSES)[0], "source": "system"}
     
     # Check Hindi/Hinglish knowledge base (match on specific trigger phrase)
     for trigger, answer in _HINDI_KNOWLEDGE_BASE.items():
@@ -767,7 +778,9 @@ def route_query(session_id: str, question: str) -> dict:
     print(f"SESSION: {session_id}")
     history = get_history_str(session_id)
     original_question = question.strip()
-    conversational_reply = _get_conversational_reply(original_question, history)
+    images = _get_session_images(session_id)
+    
+    conversational_reply = _get_conversational_reply(original_question, history, images=images)
     if conversational_reply:
         add_history(session_id, original_question, conversational_reply["answer"])
         return conversational_reply
@@ -776,7 +789,6 @@ def route_query(session_id: str, question: str) -> dict:
     print("ORIGINAL QUERY:", original_question)
     print("REFINED QUERY:", refined_question)
     question = refined_question
-    images = _get_session_images(session_id)
 
     # Check time-sensitivity on BOTH original and refined query so typos/bad prompts still work
     is_live = _is_live_or_time_sensitive(original_question) or _is_live_or_time_sensitive(refined_question)
